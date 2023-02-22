@@ -25,6 +25,9 @@ def Find_possible_D(p, m, small_bound = True, compare_BonehLove = False):
 	#Make list of possible D values within bound, including d_1, d_2 for reference
 	#This bound guarantees that the x_bound in the following function will be small enough that not every square mod p will appear as m^{-1}x^2 for some x within the x_bound.
 	#See Research Journal February 12, 2023 for more information.
+	#The second condition ensures that p can divide a number of the form (mD - x^2) / 4, i.e. p needs to be smaller than the largest such number, which is mD - x^2.
+	#  Unclear if we need this second condition to guarantee only true negatives, since if none of the squares line up with D mod p, then p can't divide any such number (regardless of the size of D)
+	#  This bound might be important for positives though, if we have an interest in those in the future.
 	possible_D = [l for l in products if l[2] < ((p-1)^2)*(4*m^2)^(-1) and p < (m*l[2]/4)]
 
 	#If comparing against Boneh-Love paper, remove any pairs of discriminants where Boneh-Love already tells us there is no path of length m between d_1 and d_2
