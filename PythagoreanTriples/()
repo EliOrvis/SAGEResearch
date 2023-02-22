@@ -1,0 +1,67 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "fbcb764d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import PPTgraphs.sage"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "fd8c67b1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "PPTgraphs.sage"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "a3256833",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "load(\"PPTgraphs.sage\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "ae0264d2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "G = create_proj_PPT_graph(5,True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "7b5610b3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "G.plot().show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "25505439",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "G.plot().show()"
+   ]
+  }
+ ],
+ "metadata": {},
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

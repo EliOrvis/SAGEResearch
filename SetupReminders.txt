@@ -1,0 +1,5 @@
+How to load files into SAGE:
+
+Ex:
+
+ load("/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/[Document name].sage")
