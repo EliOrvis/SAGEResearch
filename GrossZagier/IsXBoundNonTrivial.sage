@@ -29,7 +29,7 @@ def Find_possible_D(p, m, small_bound = True, compare_BonehLove = False):
 
 	#If comparing against Boneh-Love paper, remove any pairs of discriminants where Boneh-Love already tells us there is no path of length m between d_1 and d_2
 	if compare_BonehLove == True:
-		possible_D = [l for l in possible_D if ceil((2*sqrt(p))*(m)^(-1)) < 1 - min(-l[0], -l[1])]
+		possible_D = [l for l in possible_D if ceil(sqrt(p)/(2*determine_minimum_norm(-l[0],-l[1]))) <= l[2]]
 
 	return possible_D
 
@@ -52,3 +52,16 @@ def exists_path_possible(D_tuple, p, m):
 
 	#Return true if D is in adjusted squares and false otherwise
 	return R(D_tuple[2]) in squares_in_range_adj
+
+
+### Helper function that determines the smallest upper bound on the minimum norms of the non-integral elements in the two quadratic rings
+def determine_minimum_norm(d_1,d_2):
+	if d_1 % 4 == 0:
+		d1_bound = d_1/(-4)
+	else:
+		d1_bound = (1 - d_1)/4
+	if d_2 % 4 == 0:
+		d2_bound = d_2/(-4)
+	else:
+		d2_bound = (1 - d_2)/4
+	return max(d1_bound, d2_bound)
