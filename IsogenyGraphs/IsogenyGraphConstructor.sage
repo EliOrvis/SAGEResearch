@@ -128,26 +128,27 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
 ### ELI: Function to return vertices with endomorphisms by a given maximal order
 
 ## Inputs: G - isogeny graph, d - fundamental discriminant
-#def get_CM_vertices(G, d):
+def get_CM_vertices(G, d):
+    p = G.prime()
 
+    # Create quadratic field with discriminant d
+    K = QuadraticField(d)
+
+    # Create HCP for quadratic field above
+    h = K.hilbert_class_polynomial()
+
+    #Find roots of HCP in F_p^2
+    hmodroots = h.change_ring(GF(p^2)).roots()
+
+    #return vertices found above
+    return [hmodroots[i][0] for i in (0..len(hmodroots)-1)]
 
 ### ELI: Function to color the vertices of an isogeny graph that have endomorphism rings by
 ###      the maximal order O_d1, O_d2 for fundamental discriminants d1, d2
 
 ## Inputs: G - isogeny graph, d1, d2 - fundamental discriminants, vertex_labels = whether to add labels or not in plot object
 def color_isogeny_graph(G, d1, d2, vertex_labels = True):
-    #Isogeny graph prime
-    p = G.prime()
-
-    # Create quadratic fields with discriminants d1, d2
-    K1 = QuadraticField(d1); K2 = QuadraticField(d2)
-
-    # Create HCPs for quadratic fields K1 and K2 
-    h1 = K1.hilbert_class_polynomial(); h2 = K2.hilbert_class_polynomial()
-
-    # Coerce HCPs into F_p^2 and then find roots
-    h1modroots = h1.change_ring(GF(p^2)).roots(); h2modroots = h2.change_ring(GF(p^2)).roots()
-    vertexset1 = [h1modroots[i][0] for i in (0..len(h1modroots)-1)]; vertexset2 = [h2modroots[i][0] for i in (0..len(h2modroots)-1)]
+    vertexset1 = get_CM_vertices(G, d1); vertexset2 = get_CM_vertices(G, d2)
 
     # Create dictionary for coloring
     d = {'#FF0000' : vertexset1, '#0000FF' : vertexset2}
