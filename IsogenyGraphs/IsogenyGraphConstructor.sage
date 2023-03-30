@@ -111,8 +111,11 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
 ### ELI: Function to color the vertices of an isogeny graph that have endomorphism rings by
 ###      the maximal order O_d1, O_d2 for fundamental discriminants d1, d2
 
-## Inputs: G - isogeny graph, p - prime, d1, d2 - fundamental discriminants, vertex_labels = whether to add labels or not in plot object
-def color_isogeny_graph(G, p, d1, d2, vertex_labels = True):
+## Inputs: G - isogeny graph, d1, d2 - fundamental discriminants, vertex_labels = whether to add labels or not in plot object
+def color_isogeny_graph(G, d1, d2, vertex_labels = True):
+    #Isogeny graph prime
+    p = G.prime()
+
     # Create quadratic fields with discriminants d1, d2
     K1 = QuadraticField(d1); K2 = QuadraticField(d2)
 
@@ -127,4 +130,4 @@ def color_isogeny_graph(G, p, d1, d2, vertex_labels = True):
     d = {'#FF0000' : vertexset1, '#0000FF' : vertexset2}
 
     # Return plot object with colors added
-    return G.graphplot(vertex_colors = d, vertex_labels = vertex_labels)
+    return G.graph().graphplot(vertex_colors = d, vertex_labels = vertex_labels)
