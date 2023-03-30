@@ -20,6 +20,22 @@ class IsogenyGraph(Graph):
     def plot(self):
         return G.graph().plot()
 
+    # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
+    # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
+    def embedded_fundamental_discriminants(self, lbound, ubound):
+        if lbound > ubound:
+            raise ValueError("Lower bound is larger than upper bound")
+        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and GF(G.prime())(-d).is_square() == False]
+
+    # Method to return a random maximal discriminant such that the elliptic curves with CM by
+    # the associated maximal order are supersingular mod p. ubound and lbound are upper and lower bounds on discriminant returned. 
+    def random_fundamental_discriminant(self, lbound, ubound):
+        if lbound > ubound:
+            raise ValueError("Lower bound is larger than upper bound")
+        embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(lbound, ubound)
+        return embedded_fundamental_discriminants[randrange(0, len(embedded_fundamental_discriminants))] 
+
+
 
 
 ### Code from "Adventures in Supersingularland" https://arxiv.org/abs/1909.07779
@@ -107,6 +123,13 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
 
 #G = build_isogeny_graph_over_Fpbar(p, 2).to_undirected()
 #G.show(talk=True , figsize = [10,20])
+
+
+### ELI: Function to return vertices with endomorphisms by a given maximal order
+
+## Inputs: G - isogeny graph, d - fundamental discriminant
+#def get_CM_vertices(G, d):
+
 
 ### ELI: Function to color the vertices of an isogeny graph that have endomorphism rings by
 ###      the maximal order O_d1, O_d2 for fundamental discriminants d1, d2
