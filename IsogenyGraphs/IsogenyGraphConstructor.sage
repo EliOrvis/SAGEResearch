@@ -1,5 +1,32 @@
+### Creation of an IsogenyGraph class, so that we can package the relevant information
+### i.e. prime, isogeny degree, vertex coloring information, etc. into one object and pass
+### to other mehtods.
+
+# IsogenyGraph class inherits from sage.graphs.graph.Graph
+class IsogenyGraph(Graph):
+    def __init__(self, graph, prime, isogeny_degree):
+        Graph.__init__(self)
+        self._graph = graph
+        self._prime = prime
+        self._isogeny_degree = isogeny_degree
+    def _repr_(self):
+        return "Supersingular isogeny graph modulo %s with edges given by isogenies of degree %s"%(self._prime, self._isogeny_degree)
+    def prime(self):
+        return self._prime
+    def graph(self):
+        return self._graph
+    def isogeny_degree(self):
+        return self._isogeny_degree
+    def plot(self):
+        return G.graph().plot()
+
+
+
 ### Code from "Adventures in Supersingularland" https://arxiv.org/abs/1909.07779
 ### Authors: Sarah Arpin, Catalina Camacho-Navarro, Kristin Lauter, Joelle Lim, Kristina Nelson, Travis Scholl, Jana Sotáková.
+
+### ELI: Minor modification to return an IsogenyGraph object as created above, rather than a sage.graphs.graph.Graph object -
+###      I force the undirected graph, not sure why the original authors chose to create the graph directed.
 
 ### harcoded modular polynomials for ell = 2,3
 
@@ -66,7 +93,7 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
         count += 1
         if count == steps:
             break
-    return G
+    return IsogenyGraph(graph = G.to_undirected(), prime = p, isogeny_degree = l)
 
 
 
