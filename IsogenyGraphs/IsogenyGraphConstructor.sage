@@ -18,7 +18,7 @@ class IsogenyGraph(Graph):
     def isogeny_degree(self):
         return self._isogeny_degree
     def plot(self):
-        return G.graph().plot()
+        return self.graph().plot()
 
     # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
     # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
@@ -110,19 +110,6 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
         if count == steps:
             break
     return IsogenyGraph(graph = G.to_undirected(), prime = p, isogeny_degree = l)
-
-
-
-## Set any modular conditions on p
-# p = 100
-# while (p % 12) != 1:
-#    p = next_prime(p)
-# p
-
-
-
-#G = build_isogeny_graph_over_Fpbar(p, 2).to_undirected()
-#G.show(talk=True , figsize = [10,20])
 
 
 ### ELI: Function to return vertices with endomorphisms by a given maximal order

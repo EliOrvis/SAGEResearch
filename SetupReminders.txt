@@ -1,5 +1,11 @@
-How to load files into SAGE:
+How to attach files to SAGE: (note: using attach rather than load will automatically refresh files when they are saved, to avoid reloading each time)
 
 Ex:
 
- load("/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/[Document name].sage")
+ attach("/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/[Document name].sage")
+
+Ex (attach ALL files in folder):
+
+path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/"
+filenames = os.listdir(path)
+attach(*[path + filenames[i] for i in [0..len(filenames)-1]])

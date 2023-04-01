@@ -3,6 +3,8 @@
 
 import pandas as pd
 
+pd.set_option('display.max_columns', None)
+
 ### Obtains the set of path lengths between valleys with given fundamental discriminants
 ## Inputs: G - IsogenyGraph object, d1 & d2 - fundamental discriminants 
 ## Output: dictionary with keys (j1, j2) where j1 is a j-invariant of the SMALLER (in abs value) discriminant 
