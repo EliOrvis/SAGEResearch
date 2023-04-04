@@ -3,10 +3,9 @@
 ### to other mehtods.
 
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
-class IsogenyGraph(Graph):
-    def __init__(self, graph, prime, isogeny_degree):
-        Graph.__init__(self)
-        self._graph = graph
+class IsogenyGraph():
+    def __init__(self, prime, isogeny_degree):
+        self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
         self._prime = prime
         self._isogeny_degree = isogeny_degree
     def _repr_(self):
@@ -109,7 +108,7 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
         count += 1
         if count == steps:
             break
-    return IsogenyGraph(graph = G.to_undirected(), prime = p, isogeny_degree = l)
+    return G
 
 
 ### ELI: Function to return vertices with endomorphisms by a given maximal order
