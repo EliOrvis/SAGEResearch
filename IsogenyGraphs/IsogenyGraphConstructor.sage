@@ -8,12 +8,12 @@ class IsogenyGraph():
         self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
         self._prime = prime
         self._isogeny_degree = isogeny_degree
+    def __getattr__(self, attr):
+        return getattr(self._graph, attr)
     def _repr_(self):
         return "Supersingular isogeny graph modulo %s with edges given by isogenies of degree %s"%(self._prime, self._isogeny_degree)
     def prime(self):
         return self._prime
-    def graph(self):
-        return self._graph
     def isogeny_degree(self):
         return self._isogeny_degree
     def plot(self):
