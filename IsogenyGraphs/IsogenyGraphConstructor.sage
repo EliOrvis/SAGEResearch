@@ -140,4 +140,4 @@ def color_isogeny_graph(G, d1, d2, vertex_labels = True):
     d = {'#FF0000' : vertexset1, '#0000FF' : vertexset2}
 
     # Return plot object with colors added
-    return G.graph().graphplot(vertex_colors = d, vertex_labels = vertex_labels)
+    return G.graphplot(vertex_colors = d, vertex_labels = vertex_labels)

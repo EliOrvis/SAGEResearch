@@ -27,7 +27,7 @@ def path_lengths_between_valleys(G, d1, d2):
 		w_lengths = []
 
 		for v in vertexset1:
-			w_lengths.append(G.graph().shortest_path_length(v,w))
+			w_lengths.append(G.shortest_path_length(v,w))
 
 		# Add lengths to w under the key w
 		lengths[w] = w_lengths
