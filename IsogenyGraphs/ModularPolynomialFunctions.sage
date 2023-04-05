@@ -29,9 +29,7 @@ def find_CM_lifts(G, v, d):
 		ResField = p.residue_field()
 		Homs = Hom(ResField, GF(G.prime()^2))
 		for j in j_invars:
-			lifts_mod_p = []
 			for hom in Homs:
 				if hom(j) == v:
-					lifts_mod_p.append((j, hom))
-			lifts.append(lifts_mod_p)
+					lifts.append((j, hom))
 	return lifts

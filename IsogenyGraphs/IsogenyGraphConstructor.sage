@@ -2,6 +2,8 @@
 ### i.e. prime, isogeny degree, vertex coloring information, etc. into one object and pass
 ### to other mehtods.
 
+mpdb = ClassicalModularPolynomialDatabase()
+
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree):
@@ -16,8 +18,6 @@ class IsogenyGraph():
         return self._prime
     def isogeny_degree(self):
         return self._isogeny_degree
-    def plot(self):
-        return self.graph().plot()
 
     # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
     # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
@@ -40,16 +40,7 @@ class IsogenyGraph():
 ### Code from "Adventures in Supersingularland" https://arxiv.org/abs/1909.07779
 ### Authors: Sarah Arpin, Catalina Camacho-Navarro, Kristin Lauter, Joelle Lim, Kristina Nelson, Travis Scholl, Jana Sotáková.
 
-### ELI: Minor modification to return an IsogenyGraph object as created above, rather than a sage.graphs.graph.Graph object -
-###      I force the undirected graph, not sure why the original authors chose to create the graph directed.
-
-### harcoded modular polynomials for ell = 2,3
-
-R.<X,Y> = ZZ[]
-ModularPoly = {}
-ModularPoly[2] = X^3 - X^2*Y^2 + 1488*X^2*Y - 162000*X^2 + 1488*X*Y^2 + 40773375*X*Y + 8748000000*X + Y^3 - 162000*Y^2 + 8748000000*Y -157464000000000
-ModularPoly[3] = X^4 - X^3*Y^3 + 2232*X^3*Y^2 - 1069956*X^3*Y + 36864000*X^3 + 2232*X^2*Y^3 + 2587918086*X^2*Y^2 + 8900222976000*X^2*Y +452984832000000*X^2 - 1069956*X*Y^3 + 8900222976000*X*Y^2 - 770845966336000000*X*Y + 1855425871872000000000*X + Y^4 + 36864000*Y^3 + 452984832000000*Y^2 + 1855425871872000000000*Y
-ModularPoly[5] = X^6 - X^5*Y^5 + 3720*X^5*Y^4 - 4550940*X^5*Y^3 + 2028551200*X^5*Y^2 - 246683410950*X^5*Y + 1963211489280*X^5 +3720*X^4*Y^5 + 1665999364600*X^4*Y^4 + 107878928185336800*X^4*Y^3 + 383083609779811215375*X^4*Y^2 + 128541798906828816384000*X^4*Y + 1284733132841424456253440*X^4 - 4550940*X^3*Y^5 + 107878928185336800*X^3*Y^4 -     441206965512914835246100*X^3*Y^3 + 26898488858380731577417728000*X^3*Y^2 - 192457934618928299655108231168000*X^3*Y +     280244777828439527804321565297868800*X^3 + 2028551200*X^2*Y^5 + 383083609779811215375*X^2*Y^4 +     26898488858380731577417728000*X^2*Y^3 + 5110941777552418083110765199360000*X^2*Y^2 +     36554736583949629295706472332656640000*X^2*Y + 6692500042627997708487149415015068467200*X^2 - 246683410950*X*Y^5 +     128541798906828816384000*X*Y^4 - 192457934618928299655108231168000*X*Y^3 +     36554736583949629295706472332656640000*X*Y^2 - 264073457076620596259715790247978782949376 *X*Y +     53274330803424425450420160273356509151232000*X + Y^6 + 1963211489280*Y^5 + 1284733132841424456253440*Y^4 +     280244777828439527804321565297868800*Y^3 + 6692500042627997708487149415015068467200*Y^2 +     53274330803424425450420160273356509151232000*Y + 141359947154721358697753474691071362751004672000
+### ELI: Minor modification to use Kohel database instead of hardcoded modular polynomials
 
 
 def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
@@ -85,7 +76,7 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
     (see https://math.mit.edu/~drew/ClassicalModPolys.html) and in Sage
     via `ClassicalModularPolynomialDatabase()`.
     """
-    phi = ModularPoly[l]
+    phi = mpdb[l]
     def get_neighbors(j):
         """
         This function returns a list of all roots of Phi_l(j,X),
