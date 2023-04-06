@@ -124,11 +124,16 @@ def get_CM_vertices(G, d):
 ###      the maximal order O_d1, O_d2 for fundamental discriminants d1, d2
 
 ## Inputs: G - isogeny graph, d1, d2 - fundamental discriminants, vertex_labels = whether to add labels or not in plot object
-def color_isogeny_graph(G, d1, d2, vertex_labels = True):
-    vertexset1 = get_CM_vertices(G, d1); vertexset2 = get_CM_vertices(G, d2)
+##         default input for d2 is None, if this is left, then only vertices from d1 are colored.
+def color_isogeny_graph(G, d1, d2 = 0, vertex_labels = True):
+    vertexset1 = get_CM_vertices(G, d1)
+    if d2: vertexset2 = get_CM_vertices(G, d2)
 
     # Create dictionary for coloring
-    d = {'#FF0000' : vertexset1, '#0000FF' : vertexset2}
+    if d2:
+        d = {'#FF0000' : vertexset1, '#0000FF' : vertexset2}
+    else:
+        d = {'#FF0000' : vertexset1}
 
     # Return plot object with colors added
     return G.graphplot(vertex_colors = d, vertex_labels = vertex_labels)
