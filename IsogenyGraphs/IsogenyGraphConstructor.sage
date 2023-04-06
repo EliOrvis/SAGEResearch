@@ -24,7 +24,7 @@ class IsogenyGraph():
     def embedded_fundamental_discriminants(self, lbound, ubound):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
-        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and GF(G.prime())(-d).is_square() == False]
+        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and (GF(G.prime())(-d).is_square() == False or d % G.prime() == 0)]
 
     # Method to return a random maximal discriminant such that the elliptic curves with CM by
     # the associated maximal order are supersingular mod p. ubound and lbound are upper and lower bounds on discriminant returned. 
