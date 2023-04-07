@@ -21,14 +21,14 @@ class IsogenyGraph():
 
     # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
     # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
-    def embedded_fundamental_discriminants(self, lbound, ubound):
+    def embedded_fundamental_discriminants(self, ubound, lbound = 1,):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
         return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and (GF(G.prime())(-d).is_square() == False or d % G.prime() == 0)]
 
     # Method to return a random maximal discriminant such that the elliptic curves with CM by
     # the associated maximal order are supersingular mod p. ubound and lbound are upper and lower bounds on discriminant returned. 
-    def random_fundamental_discriminant(self, lbound, ubound):
+    def random_fundamental_discriminant(self, ubound, lbound = 1):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
         embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(lbound, ubound)
