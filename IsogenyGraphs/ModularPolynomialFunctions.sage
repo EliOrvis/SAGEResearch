@@ -16,8 +16,6 @@ def find_CM_lifts(G, v, d):
 	HCF_primes = H.primes_above(G.prime())
 	j_invars = j0.galois_conjugates(H)
 
-	v_min_poly = minimal_polynomial(v)
-
 	lifts = []
 
 	# For each prime and j-invariant, we save (j, hom) if j reduces to v under hom.
