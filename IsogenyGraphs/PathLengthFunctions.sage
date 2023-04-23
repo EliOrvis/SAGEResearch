@@ -6,10 +6,10 @@ import pandas as pd
 pd.set_option('display.max_columns', None)
 
 ### Obtains the set of path lengths between valleys with given fundamental discriminants
-## Inputs: G - IsogenyGraph object, d1 & d2 - fundamental discriminants 
+## Inputs: G - IsogenyGraph object, d1 & d2 - fundamental discriminants, table_format - if true, return pd Dataframe with nice indices for viewing, otherwise dictionary 
 ## Output: dictionary with keys (j1, j2) where j1 is a j-invariant of the SMALLER (in abs value) discriminant 
 ##         and j2 is a j-invariant of the LARGER (in abs value) discriminant, and values the shortest path length between them
-def path_lengths_between_valleys(G, d1, d2):
+def path_lengths_between_valleys(G, d1, d2, table_format = False):
 	if abs(d1) <= abs(d2):
 		d_small = d1
 		d_large = d2
@@ -32,9 +32,13 @@ def path_lengths_between_valleys(G, d1, d2):
 		# Add lengths to w under the key w
 		lengths[w] = w_lengths
 
-	# Convert into pandas dataframe for easier viewing
-	df = pd.DataFrame(data = lengths)	
-	# Set indices to be vertices from valley 1
-	s = pd.Series(vertexset1)
+	if table_format == True:
+		# Convert into pandas dataframe for easier viewing
+		df = pd.DataFrame(data = path_lengths)	
+		# Set indices to be vertices from valley 1
+		s = pd.Series(vertexset1)
 
-	return df.set_index(s)
+		return df.set_index(s)
+
+	else:
+		return lengths
