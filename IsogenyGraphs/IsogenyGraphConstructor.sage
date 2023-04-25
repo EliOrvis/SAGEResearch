@@ -31,7 +31,7 @@ class IsogenyGraph():
     def random_fundamental_discriminant(self, ubound, lbound = 1):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
-        embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(lbound, ubound)
+        embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(ubound, lbound)
         return embedded_fundamental_discriminants[randrange(0, len(embedded_fundamental_discriminants))] 
 
 
