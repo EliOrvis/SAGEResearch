@@ -5,7 +5,7 @@ import pandas as pd
 
 pd.set_option('display.max_columns', None)
 
-### Obtains the set of path lengths between valleys with given fundamental discriminants
+### Obtains the set of shortest path lengths between valleys with given fundamental discriminants
 ## Inputs: G - IsogenyGraph object, d1 & d2 - fundamental discriminants, table_format - if true, return pd Dataframe with nice indices for viewing, otherwise dictionary 
 ## Output: dictionary with keys (j1, j2) where j1 is a j-invariant of the SMALLER (in abs value) discriminant 
 ##         and j2 is a j-invariant of the LARGER (in abs value) discriminant, and values the shortest path length between them
@@ -42,3 +42,45 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 
 	else:
 		return lengths
+
+
+### Determines whether there exists a path of given length between two given vertices
+## Inputs: G - a graph object; v, w - vertices of G; length - length of path to search for
+## Outputs: True/False boolean
+# NOTE: currently allows for cycles, so, for example, every vertex is separated from itself by a "path" of length 2
+
+def exists_path_of_length(G, v, w, length):
+
+	if length == 0:
+		if v == w:
+			return True
+		else:
+			return False
+
+
+	else:
+		neighbors = G.neighbors(v)
+		if length > 0:
+			while len(neighbors) > 0:
+				neigh = neighbors.pop()
+				if exists_path_of_length(G,neigh,w, length - 1):
+					return True
+			return False
+
+
+### Returns the pairs of vertices between two valleys separated by a path of a given length
+## Inputs: G - an isogeny graph object; d1, d2 - embedded fundamental discriminants (these can be the same); length - length to search for
+## Outputs: list of pairs of vertices with optimally embedded copy of maximal order in d1, d2 respectively, separated by a path of requested length
+
+def CM_pairs_separated_by_path_length(G, d1, d2, length):
+	vertexset1 = get_CM_vertices(G, d1); vertexset2 = get_CM_vertices(G, d2)
+
+	pairs = []
+
+	for v in vertexset1:
+		for w in vertexset2:
+			if exists_path_of_length(G,v,w,length):
+				if (v,w) not in pairs and (w,v) not in pairs:
+					pairs.append((v,w))
+
+	return pairs
