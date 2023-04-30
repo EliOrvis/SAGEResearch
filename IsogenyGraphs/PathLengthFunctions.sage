@@ -49,7 +49,7 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 ## Outputs: True/False boolean
 # NOTE: currently allows for cycles, so, for example, every vertex is separated from itself by a "path" of length 2
 
-def exists_path_of_length(G, v, w, length):
+def exists_path_of_length(G, v, w, length, visited = []):
 
 	if length == 0:
 		if v == w:
@@ -59,13 +59,17 @@ def exists_path_of_length(G, v, w, length):
 
 
 	else:
-		neighbors = G.neighbors(v)
-		if length > 0:
-			while len(neighbors) > 0:
-				neigh = neighbors.pop()
-				if exists_path_of_length(G,neigh,w, length - 1):
-					return True
-			return False
+		neighbors = list(set(G.neighbors(v)) - set(visited))
+		while len(neighbors) > 0:
+			visited.append(v)
+			neigh = neighbors.pop()
+			if exists_path_of_length(G,neigh,w, length - 1, visited):
+				return True
+			visited = []
+		return False
+
+def exists_path_of_length(G, v, w, length):
+	return False
 
 
 ### Returns the pairs of vertices between two valleys separated by a path of a given length

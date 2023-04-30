@@ -8,6 +8,9 @@ mpdb = ClassicalModularPolynomialDatabase()
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree):
         self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
+
+        # Relabel multiple edges to distinguish in path-length functions
+        relabel_multiedges(self._graph)
         self._prime = prime
         self._isogeny_degree = isogeny_degree
     def __getattr__(self, attr):
@@ -100,6 +103,44 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
         if count == steps:
             break
     return G
+
+
+### Function to relabel all multiple edges in a graph so that each edge has a unique (numeric) label
+## This is useful when searching for paths in the SSl-I graph and disallowing backtracking, and is used in the IsogenyGraph constructor
+## Inputs: G - graph object
+## Outputs: None - the function directly modifies the input
+
+def relabel_multiedges(G):
+
+    # Iterator over all multiple edges in G
+    i = 0
+
+    # store new, labelled edges in list to append at the end
+    new_edges = []
+
+    # list of original, unlabelled multiedges, sorted so that there are no (u,v,None) and (v,u,None) 
+    old_edges = G.multiple_edges()
+
+    while i < len(old_edges):
+
+        # iterator for sublist of edges between the same two vertices
+        j = 0
+
+        #reference vertices
+        ref_vert_0 = old_edges[i][0]; ref_vert_1 = old_edges[i][1]
+
+        # NOTE: This isn't a good way to do this, I'm expecting the list from G.multiple_edges() is nicely ordered
+        #       A better solution would be to find the list of edges that have (u,v) or (v,u), iterate over all, deleting as I go
+        #       and then go to the next reference vertex. I'll update this someday in the future.
+        while (i < len(old_edges)) and (old_edges[i][0], old_edges[i][1]) == (ref_vert_0, ref_vert_1):
+            G.delete_edge((old_edges[i][0], old_edges[i][1], None))
+            new_edges.append((old_edges[i][0], old_edges[i][1], j))
+            j += 1
+            i += 1
+
+    # Add in new (labelled) edges
+    for e in new_edges:
+        G.add_edge(e)
 
 
 ### ELI: Function to return vertices with endomorphisms by a given maximal order
