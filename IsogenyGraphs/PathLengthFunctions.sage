@@ -68,9 +68,6 @@ def exists_path_of_length(G, v, w, length, visited = []):
 			visited = []
 		return False
 
-def exists_path_of_length(G, v, w, length):
-	return False
-
 
 ### Returns the pairs of vertices between two valleys separated by a path of a given length
 ## Inputs: G - an isogeny graph object; d1, d2 - embedded fundamental discriminants (these can be the same); length - length to search for
