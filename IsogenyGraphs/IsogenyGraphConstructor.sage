@@ -37,6 +37,14 @@ class IsogenyGraph():
         embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(ubound, lbound)
         return embedded_fundamental_discriminants[randrange(0, len(embedded_fundamental_discriminants))] 
 
+    # Method to return adjacency matrix of G, but with loops counted as two
+    def adjusted_AM(self): 
+        AM = copy(self.adjacency_matrix())
+        for i in range(AM.dimensions()[1]):
+            if AM[i][i] > 0:
+                AM[i,i] = 2*AM[i,i]
+        return AM
+
 
 
 
