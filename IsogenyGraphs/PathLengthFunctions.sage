@@ -44,29 +44,51 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 		return lengths
 
 
-### Determines whether there exists a path of given length between two given vertices
+### Counts the number of paths of given length between two given vertices; 
+###    the only paths counted are those that do not backtrack along edges, i.e. if we take 
+###    an edge e from u to v, the subsequence edge cannot be the same edge back from v to u, 
+###    but it can be a different edge from v to u. This corresponds to counting cyclic isogenies,
+###    except maybe at the vertices with extra automorphisms, where there could be additional cyclic isogenies.
 ## Inputs: G - a graph object; v, w - vertices of G; length - length of path to search for
-## Outputs: True/False boolean
-# NOTE: currently allows for cycles, so, for example, every vertex is separated from itself by a "path" of length 2
+## Outputs: integer count of paths
 
-def exists_path_of_length(G, v, w, length, visited = []):
+# Note: This function does not actually find the paths (at all). Instead, it uses combinatorics to quickly count such paths.
 
-	if length == 0:
-		if v == w:
-			return True
-		else:
-			return False
+def n_paths_of_length(G, v, w, length):
+
+	# Get adjusted (i.e. loops counted as 2) adjacency matrix for G 
+	A = G.adjusted_AM()
+	# Make diagonal matrix with vertex degree on diagonal
+	# Note that sort = True ensures this is in the same order as in making the AM
+	verts = G.vertices(sort=True)
+	D = diagonal_matrix([G.degree(v) for v in verts])
+	# Make identity matrix
+	I = identity_matrix(len(verts))
+
+	#create variables x,y,z,w
+	Atemp,Dtemp,z = var('Atemp,Dtemp,z')
+	# This is the generating function for the # NBW matrix when we set Itemp = I, Atemp = A, and Dtemp = D 
+	# See RJ 5/5/2023 - this is from Kempton 2016
+	genfun = -(z^2 - 1)/((Dtemp - 1)*z^2 - Atemp*z + 1)
+
+	# Get coefficient on x^length in series expanssion
+	# Evaluating this will give the matrix of NBW counts
+	coeff = genfun.series(z, length + 1).coefficient(z,length)	
+
+	# Create function field in 4 variables, this is necessary because sage won't evaluate symbolic expressions on matrices
+	R.<Atemp,Dtemp,z> = PolynomialRing(QQ,3)
+	F = R.fraction_field()
+	coeff_func = F(coeff)
+
+	# Get matrix of counts
+	M = coeff_func(Atemp = A, Dtemp = D)
+
+	#return requested entry
+	return M[verts.index(v)][verts.index(w)]
 
 
-	else:
-		neighbors = list(set(G.neighbors(v)) - set(visited))
-		while len(neighbors) > 0:
-			visited.append(v)
-			neigh = neighbors.pop()
-			if exists_path_of_length(G,neigh,w, length - 1, visited):
-				return True
-			visited = []
-		return False
+
+
 
 
 ### Returns the pairs of vertices between two valleys separated by a path of a given length
@@ -80,7 +102,7 @@ def CM_pairs_separated_by_path_length(G, d1, d2, length):
 
 	for v in vertexset1:
 		for w in vertexset2:
-			if exists_path_of_length(G,v,w,length):
+			if n_paths_of_length(G,v,w,length) > 0:
 				if (v,w) not in pairs and (w,v) not in pairs:
 					pairs.append((v,w))
 
