@@ -46,7 +46,7 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
 
 	HCF_primes = H.primes_above(G.prime())
 	if fixed_prime == True:
-		fixed_prime = HCF_primes[randrange(0, len(HCF_primes))]
+		P = HCF_primes[randrange(0, len(HCF_primes))]
 
 	j_invars = j0.galois_conjugates(H)
 
@@ -58,8 +58,8 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
 		for j1 in j_invars:
 			for j2 in j_invars:
 				mod_poly_ideal = H.ideal(phi(j1, j2))
-				if mod_poly_ideal.is_coprime(test_prim) == False:
-					primes_dividing_pairs.append((test_prim, j1, j2))
+				if mod_poly_ideal.is_coprime(P) == False:
+					primes_dividing_pairs.append((P, j1, j2))
 	else:
 		for j in j_invars:
 			mod_poly_ideal = H.ideal(phi(j0,j))
