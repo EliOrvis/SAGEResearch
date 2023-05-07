@@ -65,7 +65,7 @@ def n_paths_of_length(G, v, w, length):
 	# Make identity matrix
 	I = identity_matrix(len(verts))
 
-	#create variables x,y,z,w
+	#create variables Atemp,Dtemp,z
 	Atemp,Dtemp,z = var('Atemp,Dtemp,z')
 	# This is the generating function for the # NBW matrix when we set Itemp = I, Atemp = A, and Dtemp = D 
 	# See RJ 5/5/2023 - this is from Kempton 2016
@@ -85,10 +85,6 @@ def n_paths_of_length(G, v, w, length):
 
 	#return requested entry
 	return M[verts.index(v)][verts.index(w)]
-
-
-
-
 
 
 ### Returns the pairs of vertices between two valleys separated by a path of a given length
