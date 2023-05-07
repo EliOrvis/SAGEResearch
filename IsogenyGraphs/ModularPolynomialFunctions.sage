@@ -45,6 +45,8 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
 	H.<j0> = Q.extension(HCP)
 
 	HCF_primes = H.primes_above(G.prime())
+
+	# If fixed_prime is true, then select a random prime lying over p
 	if fixed_prime == True:
 		P = HCF_primes[randrange(0, len(HCF_primes))]
 
@@ -54,15 +56,23 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
 
 	primes_dividing_pairs = []
 
+	# If working with a fixed prime, loop over all j-invariant pairs
 	if fixed_prime == True:
 		for j1 in j_invars:
 			for j2 in j_invars:
-				mod_poly_ideal = H.ideal(phi(j1, j2))
-				if mod_poly_ideal.is_coprime(P) == False:
-					primes_dividing_pairs.append((P, j1, j2))
+				mod_poly = phi(j1,j2)
+				# This step is necessary because initializing 0 as a fractional ideal throws an error
+				# and checking if a non-fractional ideal (NumberFieldIdeal class) is coprime is not implemented
+				if mod_poly == 0:
+					primes_dividing_pairs.append((P,j1,j2))
+				else:
+					mod_poly_ideal = H.fractional_ideal(mod_poly)
+					if mod_poly_ideal.is_coprime(P) == False:
+						primes_dividing_pairs.append((P, j1, j2))
+	# Note: this method might return errors when phi(j0,j) == 0. Note sure yet how we should count this case here, so I've left it alone
 	else:
 		for j in j_invars:
-			mod_poly_ideal = H.ideal(phi(j0,j))
+			mod_poly_ideal = H.fractional_ideal(phi(j0,j))
 			for prime in HCF_primes:
 				if mod_poly_ideal.is_coprime(prime) == False:
 					primes_dividing_pairs.append((prime, j0, j))
