@@ -57,25 +57,36 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
 	primes_dividing_pairs = []
 
 	# If working with a fixed prime, loop over all j-invariant pairs
+	# since phi is symmetric, we need only check each pair once
 	if fixed_prime == True:
+		# remember which j-invariants have already been checked
+		js_visited = []
 		for j1 in j_invars:
 			for j2 in j_invars:
-				mod_poly = phi(j1,j2)
-				# This step is necessary because initializing 0 as a fractional ideal throws an error
-				# and checking if a non-fractional ideal (NumberFieldIdeal class) is coprime is not implemented
-				if mod_poly == 0:
-					primes_dividing_pairs.append((P,j1,j2))
-				else:
-					mod_poly_ideal = H.fractional_ideal(mod_poly)
-					if mod_poly_ideal.is_coprime(P) == False:
-						primes_dividing_pairs.append((P, j1, j2))
-	# Note: this method might return errors when phi(j0,j) == 0. Note sure yet how we should count this case here, so I've left it alone
+				if j2 not in js_visited:
+					mod_poly = phi(j1,j2)
+					# This step is necessary because initializing 0 as a fractional ideal throws an error
+					# and checking if a non-fractional ideal (NumberFieldIdeal class) is coprime is not implemented
+					if mod_poly == 0:
+						primes_dividing_pairs.append((P,j1,j2))
+					else:
+						mod_poly_ideal = H.fractional_ideal(mod_poly)
+						if mod_poly_ideal.is_coprime(P) == False:
+							primes_dividing_pairs.append((P, j1, j2))
+			js_visited.append(j1)
+
+	# If not fixing a prime, instead fix a j-invariant, and count primes 
 	else:
 		for j in j_invars:
-			mod_poly_ideal = H.fractional_ideal(phi(j0,j))
-			for prime in HCF_primes:
-				if mod_poly_ideal.is_coprime(prime) == False:
+			mod_poly = phi(j0,j)
+			if mod_poly == 0:
+				for prime in HCF_primes:
 					primes_dividing_pairs.append((prime, j0, j))
+			else:
+				mod_poly_ideal = H.fractional_ideal(phi(j0,j))
+				for prime in HCF_primes:
+					if mod_poly_ideal.is_coprime(prime) == False:
+						primes_dividing_pairs.append((prime, j0, j))
 
 	return primes_dividing_pairs
 
