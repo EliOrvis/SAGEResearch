@@ -34,59 +34,35 @@ def find_CM_lifts(G, v, d):
 
 ### Find the number of primes dividing phi_ell^n(j_1, j_2), where j_2 ranges over all j-invariants in a given valley
 ## Inputs: G - isogeny graph object; d1, d2 - embedded fundamental discriminants; length - path-length to consider (i.e., ell^n = ell^length)
-##			fixed_prime - whether to fix a (random) prime of reduction instead of fixing a j-invariant
 ## Outputs: list of triples (P, j_1, j_2) where P divides phi_ell^n(j_1,j_2)
 
-# NOTE: Currently only implemented for when d1 == d2
-def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, fixed_prime = False):
+def primes_dividing_modpoly_pseudonorm(G, d1, d2, length):
 	# Initiate everything
-	Q.<sqrtd> = QuadraticField(d)
-	HCP = Q.hilbert_class_polynomial()
-	H.<j0> = Q.extension(HCP)
+	Q1.<sqrtd1> = QuadraticField(d1); Q2.<sqrtd2> = QuadraticField(d2)
+	HCP1 = Q1.hilbert_class_polynomial(); HCP2 = Q2.hilbert_class_polynomial()
+	H1.<j01> = Q1.extension(HCP1)
 
-	HCF_primes = H.primes_above(G.prime())
+	H1H2.<j02> = H1.extension(HCP2)
 
-	# If fixed_prime is true, then select a random prime lying over p
-	if fixed_prime == True:
-		P = HCF_primes[randrange(0, len(HCF_primes))]
+	HCF_primes = H1H2.primes_above(G.prime())
 
-	j_invars = j0.galois_conjugates(H)
+	j_invars_1 = j01.galois_conjugates(H1H2)
+	j_invars_2 = j02.galois_conjugates(H1H2)
 
 	phi = mpdb[G.isogeny_degree()^length]
 
 	primes_dividing_pairs = []
 
-	# If working with a fixed prime, loop over all j-invariant pairs
-	# since phi is symmetric, we need only check each pair once
-	if fixed_prime == True:
-		# remember which j-invariants have already been checked
-		js_visited = []
-		for j1 in j_invars:
-			for j2 in j_invars:
-				if j2 not in js_visited:
-					mod_poly = phi(j1,j2)
-					# This step is necessary because initializing 0 as a fractional ideal throws an error
-					# and checking if a non-fractional ideal (NumberFieldIdeal class) is coprime is not implemented
-					if mod_poly == 0:
-						primes_dividing_pairs.append((P,j1,j2))
-					else:
-						mod_poly_ideal = H.fractional_ideal(mod_poly)
-						if mod_poly_ideal.is_coprime(P) == False:
-							primes_dividing_pairs.append((P, j1, j2))
-			js_visited.append(j1)
-
-	# If not fixing a prime, instead fix a j-invariant, and count primes 
-	else:
-		for j in j_invars:
-			mod_poly = phi(j0,j)
-			if mod_poly == 0:
-				for prime in HCF_primes:
-					primes_dividing_pairs.append((prime, j0, j))
-			else:
-				mod_poly_ideal = H.fractional_ideal(phi(j0,j))
-				for prime in HCF_primes:
-					if mod_poly_ideal.is_coprime(prime) == False:
-						primes_dividing_pairs.append((prime, j0, j))
+	for j in j_invars_2:
+		mod_poly = phi(j01,j)
+		if mod_poly == 0:
+			for prime in HCF_primes:
+				primes_dividing_pairs.append((prime, j01, j))
+		else:
+			mod_poly_ideal = H1H2.fractional_ideal(mod_poly)
+			for prime in HCF_primes:
+				if mod_poly_ideal.is_coprime(prime) == False:
+					primes_dividing_pairs.append((prime, j01, j))
 
 	return primes_dividing_pairs
 

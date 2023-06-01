@@ -99,7 +99,6 @@ def CM_pairs_separated_by_path_length(G, d1, d2, length):
 	for v in vertexset1:
 		for w in vertexset2:
 			if n_paths_of_length(G,v,w,length) > 0:
-				if (v,w) not in pairs and (w,v) not in pairs:
-					pairs.append((v,w))
+				pairs.append((v,w))
 
 	return pairs
