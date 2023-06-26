@@ -49,12 +49,12 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 ###    an edge e from u to v, the subsequence edge cannot be the same edge back from v to u, 
 ###    but it can be a different edge from v to u. This corresponds to counting cyclic isogenies,
 ###    except maybe at the vertices with extra automorphisms, where there could be additional cyclic isogenies.
-## Inputs: G - a graph object; v, w - vertices of G; length - length of path to search for
-## Outputs: integer count of paths
+## Inputs: G - a graph object; length - length of path to search for
+## Outputs: Matrix of path lengths, with indices given by the vertices of G in sorted order
 
 # Note: This function does not actually find the paths (at all). Instead, it uses combinatorics to quickly count such paths.
 
-def n_paths_of_length(G, v, w, length):
+def paths_of_length_n_matrix(G, length):
 
 	# Get adjusted (i.e. loops counted as 2) adjacency matrix for G 
 	A = G.adjusted_AM()
@@ -84,7 +84,7 @@ def n_paths_of_length(G, v, w, length):
 	M = coeff_func(Atemp = A, Dtemp = D)
 
 	#return requested entry
-	return M[verts.index(v)][verts.index(w)]
+	return M
 
 
 ### Returns the pairs of vertices between two valleys separated by a path of a given length
@@ -96,9 +96,14 @@ def CM_pairs_separated_by_path_length(G, d1, d2, length):
 
 	pairs = []
 
+	# Get sorted vertices so that indices match the matrix indices
+	verts = G.vertices(sort = True)
+
+	M = paths_of_length_n_matrix(G,length)
+
 	for v in vertexset1:
 		for w in vertexset2:
-			if n_paths_of_length(G,v,w,length) > 0:
+			if M[verts.index(v)][verts.index(w)] > 0:
 				pairs.append((v,w))
 
 	return pairs
