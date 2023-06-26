@@ -104,11 +104,11 @@ def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, random_j1 = False):
 
 
 ### Compute the correction factor between the number of pairs and the count of primes dividing the modular polynomial pseudonorm
-## Inputs: G - isogeny graph object; d1, d2 - embedded fundamental discriminants;
+## Inputs: d1, d2 - embedded fundamental discriminants;
 ## Outputs: integer correction factor
 
 # Note: d1 and d2 must be input in the same order that they were input to the pair coutning function and the prime counting function for (silly) technical reasons.
-def prime_pair_correction_factor(G, d1, d2):
+def prime_pair_correction_factor(d1, d2):
 	# when d1 == d2, no correction is needed
 	if d1 == d2:
 		return 1
@@ -122,12 +122,15 @@ def prime_pair_correction_factor(G, d1, d2):
 
 		H2.<j2> = K2.hilbert_class_field()
 
-		# Find degree of intersection by counting the number of quadratic fields contained in both H1, H2
-		quad_disc_in_H1 = [subfield[0].discriminant() for subfield in H1.subfields(2)]
-		quad_disc_in_H2 = [subfield[0].discriminant() for subfield in H2.subfields(2)]
+		# Find degree of intersection 
+		H2poly = H2.absolute_polynomial()
 
-		n_quad_overlap = len([disc for disc in quad_disc_in_H1 if disc in quad_disc_in_H2])
+		composite_extension_degree = H2poly.change_ring(H1).factor()[0][0].degree()
 
-		return (2^(n_quad_overlap-1))/hd2
+		# Degree of intersection is given by degree of H2 over degree of a factor of HCP2 over H1
+		intersection_degree = (2*hd2 / composite_extension_degree)
+
+		# Correction factor is given by intersection degree over twice class number of K2
+		return intersection_degree / (2*hd2)
 
 
