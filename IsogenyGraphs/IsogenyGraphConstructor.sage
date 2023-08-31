@@ -27,14 +27,14 @@ class IsogenyGraph():
     def embedded_fundamental_discriminants(self, ubound, lbound = 1):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
-        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and (GF(G.prime())(-d).is_square() == False or d % G.prime() == 0)]
-
+        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and (GF(self.prime())(-d).is_square() == False or d % self.prime() == 0)]
+ 
     # Method to return a random maximal discriminant such that the elliptic curves with CM by
     # the associated maximal order are supersingular mod p. ubound and lbound are upper and lower bounds on discriminant returned. 
     def random_fundamental_discriminant(self, ubound, lbound = 1):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
-        embedded_fundamental_discriminants = G.embedded_fundamental_discriminants(ubound, lbound)
+        embedded_fundamental_discriminants = self.embedded_fundamental_discriminants(ubound, lbound)
         return embedded_fundamental_discriminants[randrange(0, len(embedded_fundamental_discriminants))] 
 
     # Method to return adjacency matrix of G, but with loops counted as two
