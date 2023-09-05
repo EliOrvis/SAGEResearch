@@ -63,9 +63,28 @@ def artin_iso(I, hom):
 
 	H_prime = H.primes_above(hom(rep_prime))[0]
 
-	GalG = H.galois_group()
+	p = H_prime.smallest_integer()
 
-	return GalG.artin_symbol(H_prime)
+	if p.divides(K.discriminant()):
+		raise ValueError("Rep prime in artin_iso is ramified, I have to fix this, why oh why?")
+
+	# Assumes K is Galois so that we can pick whichever prime over p, this should always be true for me
+	norm = K.primes_above(p)[0].norm()
+
+	GalG = H.galois_group()
+	
+	gens = H.ring_of_integers().ring_generators()	
+
+	t = []
+
+	# This is taken from source code, and just replaced "p" by "norm" so that we can get the Hilbert Symbol over other ground fields
+	for s in GalG.decomposition_group(H_prime):
+		w = [(s(g) - g**(norm)).valuation(H_prime) for g in gens]
+		if min(w) >= 1:
+			t.append(s)
+	if len(t) > 1:
+		raise ValueError("%s is ramified" % H_prime)
+	return t[0]
 
 ## This function does the computation of Theorem 4.7 from GZ on input B, A, level, p, d
 def GZ_computation(B, A, level, p, d):
@@ -98,48 +117,57 @@ def GZ_computation(B, A, level, p, d):
 
 	return total_val
 
+## This function returns a table with the factorization data within a given valley
+## Note that no validation of the necessary assumptions in OSM is implemented yet, this will come later.
+def factorization_data_within_valley(level, p, d):
+	# Construct relevant fields, polynomials, etc., making sure everything is Galois 
+	K = QuadraticField(d)
+	H.<gen> = K.hilbert_class_field('j').galois_closure()
+
+	HCP = K.hilbert_class_polynomial()
+
+	R.<t> = ZZ[]
+	f = t^2 - d
+	f_root  = f.change_ring(H).any_root()
+
+	js = [root[0] for root in HCP.change_ring(H).roots()]
 
 
-## This function computes the P-order of phi_m(j_1, j_2), where j_1 and j_2 are assumed to be supersingular modulo p, and have CM by O_sqrt(-d) where d is a prime
-# Inputs: G - isogeny graph; d - discriminant; 
-#         B - fractional ideal of K taking real j-invariant w/ CM by d to j2 via CM/Galois action; 
-#         level - level of modular curve; P - prime of H
-# Outputs: ord_P(phi_m(j1,j2))  
-# def GZ_thm4_7(G, d, B, level, P): 
 
-# 	### Validate that the assumptions of the theorem are true.
+	# Get quadratic subfield and embedding in H - note that this assumes there is only ONE quadratic subfield of H
+	# This assumption should be guaranteed in our case since the class number is odd, and therefore there is 
+	# 	only one subgroup of Gal(H/K) with index 2. In a more general situation we would have to figure out which quadratic
+	#   subfield is the correct one.
+	QuadSub, QuadSub_embedding = [sub for sub in H.subfields() if sub[0].absolute_degree() == 2][0][:2]
 
-# 	## Discriminant must be the negative of a prime
-# 	if (-d).is_prime() == False:
-# 		raise ValueError("Discriminant must be -p for a prime p.")
+	CLG = QuadSub.class_group()
 
-# 	## p must not split in the field Q(sqrt(d))	
-# 	if legendre_symbol(d, G.prime()) == 1:
-# 		raise ValueError("CM curves with discriminant d must be supersingular modulo p.")
-	
-# 	## There must not be an ideal of norm level in the ideal class of B
-# 	## Note that this is HIGHLY non-optimized, as it computes ALL ideals of
-# 	##      norm up to level and then only considers the ideals of norm equal to level
-# 	##      if performance every becomes an issue and/or before publication this should be fixed
+	primes_in_H = H.primes_above(p)
 
-# 	# Get the number field that B lives in (this should be the HCF of d)
-# 	# Note that I should be given as a *relative* ideal in H, so that we can recover the base field later
-# 	H = B.number_field()
-# 	if H.is_isomorphic(QuadraticField(d).hilbert_class_field()) == False:
-# 		raise ValueError("B must be an ideal in the HCF of Q(sqrt(d)).")
+	GalG = H.galois_group()
 
-# 	# Get all ideals of norm equal to level in H
-# 	ideals_of_norm_level = H.ideals_of_bdd_norm(level)[level]
+	counter = 0
 
-# 	# Get the class group of H
-# 	G = H.class_group(); B_class = G(B)
+	for j in js:
+		
+		for cl in CLG:
+			B = cl.representative_prime()
 
-# 	# For each ideal of norm level, check if it is equivalent to B
-# 	for ideal in ideals_of_norm_level: 
-# 		if B_class == G(ideal):
-# 			raise ValueError("There cannot be any ideals of norm equal to level in the ideal class of B.")
+			for prime in primes_in_H:
 
-# 	### Implement formula if no errors were raised
+				# Find A for the particular prime
+				# Again, everything is assuming there is only one of each, which is ok in our case as above
+				tau = [g for g in GalG if g(j) == j and g.order() == 2][0]
+				P = [prim for prim in primes_in_H if tau(prim) == prim][0]
 
-# 	## First, we need to find the ideal \mathfrak{a}^2. This can be done by fixing any
-	
+				actors = [g for g in GalG if g(prime) == P]
+
+				sigmaA = [g for g in actors if g(f_root) == f_root][0]
+
+				A = [cl for cl in CLG if artin_iso(cl.representative_prime(), QuadSub_embedding) == sigmaA][0].representative_prime()
+
+
+				if GZ_computation(B,A,level,p,d) > 0:
+					counter += 1
+
+	return counter

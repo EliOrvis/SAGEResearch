@@ -34,7 +34,7 @@ def find_CM_lifts(G, v, d):
 
 ### Find the number of primes dividing phi_ell^n(j_1, j_2), where j_2 ranges over all j-invariants in a given valley
 ## Inputs: G - isogeny graph object; d1, d2 - embedded fundamental discriminants; length - path-length to consider (i.e., ell^n = ell^length)
-##           random_j1 - whether to randomly choose a j1 from H1 to be the fixed input to the modular polynomail
+##           random_j1 - whether to randomly choose a j1 from H1 to be the fixed input to the modular polynomial
 ## Outputs: list of triples (P, j_1, j_2) where P divides phi_ell^n(j_1,j_2)
 def primes_dividing_modpoly_pseudonorm(G, d1, d2, length, random_j1 = False):
 
