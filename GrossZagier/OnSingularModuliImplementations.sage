@@ -171,3 +171,62 @@ def factorization_data_within_valley(level, p, d):
 					counter += 1
 
 	return counter
+
+
+## This function is a MUCH faster version, which relies on a simplification when counting
+##  over all primes P and conjugats j' of one fixed j. See RJ 9/5 or 9/6 for the details.
+##  The output here should be the exact number of paths within the valley (of course with all)
+##  of the usual assumptions in place, which still are not validated.
+
+def count_edges_within_valley(d, p, l):
+
+	# Initialize total counter
+	count = 0
+
+	# useful to reduce amount of writing
+	ld = (-l)*d
+
+	# Initialize class group
+	clG = QuadraticField(d).class_group()
+
+	# This could be sped up by iterating only over n in the right residue class
+	for n in [1..ld]:
+		if n % p != ld % p:
+			count = count + 0
+		else:
+			# This case is necessary for the .ord call, could probably improve this with error handling
+			if (ld - n) != 0:
+				# This is the highest k value where the fraction is at least 1
+				k_max = (ld - n).ord(p)
+
+				for k in [1..k_max]:
+					# Initialize counters
+					rep_n_count = 0
+					rep_frac_count = 0
+
+					# Loop over all elements of the class group to count how many represent n, (ld-n)/p^k
+					for cl in clG:
+						# Pick an element of the ideal class to pass to rep_num
+						rep_prime = cl.representative_prime()
+						
+						if repnum(n, rep_prime) > 0:
+							rep_n_count = rep_n_count + 1
+						if repnum((ld - n)*(1/p^k), rep_prime) > 0:
+							rep_frac_count = rep_frac_count + 1
+
+				# Add the product of the counts to our total
+				count = count + rep_n_count*rep_frac_count
+
+			else:
+				# In this case, loop over just the class group
+				rep_n_count = 0
+				rep_0_count = 0
+				for cl in CLG:
+					rep_prime = cl.representative_prime()
+					if repnum(n, rep_prime) > 0:
+						rep_n_count = rep_n_count + 1
+					if repnum(0, rep_prime) > 0:
+						rep_0_count = rep_0_count + 1
+				count = count + rep_n_count*rep_0_count 
+
+	return count
