@@ -54,23 +54,31 @@ def artin_iso(I, hom):
 	if hom.codomain().is_isomorphic(I.number_field().hilbert_class_field(names = 'b')) == False:
 		raise ValueError("Hom must have codomain isomorphic to the HCF of I.")
 
+	# Find domain and codomain number fields - assumption is that I is an ideal in K and hom is a map to the HCF
 	K = hom.domain()
 	H = hom.codomain()
 
+	# Construct the class group of G
 	clG = K.class_group()
 
+	# Pick a representative prime in order to compute the Artin map
 	rep_prime = clG(I).representative_prime()
 
+	# Pick a random prime of H above the representative prime in I
 	H_prime = H.primes_above(hom(rep_prime))[0]
 
+	# Smallest integer in H_prime is the prime that H_prime lies over
 	p = H_prime.smallest_integer()
 
+	# Validation to check whether we randomly picked one of the finitely many ramified primes.
+	# Not sure yet how to make a second choice of representative prime if we run into this issue
 	if p.divides(K.discriminant()):
 		raise ValueError("Rep prime in artin_iso is ramified, I have to fix this, why oh why?")
 
 	# Assumes K is Galois so that we can pick whichever prime over p, this should always be true for me
 	norm = K.primes_above(p)[0].norm()
 
+	# Get Galois group of H - note that H has to be Galois for this to work, right now I don't have any validation guaranteeing
 	GalG = H.galois_group()
 	
 	gens = H.ring_of_integers().ring_generators()	
