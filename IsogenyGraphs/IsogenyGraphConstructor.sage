@@ -5,9 +5,16 @@
 mpdb = ClassicalModularPolynomialDatabase()
 
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
+# NOTE: The undirected flag should always be left as True for now - the directed version
+#       created in Adventures in SS land is not actually the directed isogeny graph, and 
+#       so this should not be used until I create an alternate constructor that makes the actual
+#       directed isogeny graph.
 class IsogenyGraph():
-    def __init__(self, prime, isogeny_degree):
-        self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
+    def __init__(self, prime, isogeny_degree, undirected = True):
+        if undirected == True:
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
+        else:
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree)
 
         # Relabel multiple edges to distinguish in path-length functions
         relabel_multiedges(self._graph)
@@ -186,3 +193,13 @@ def color_isogeny_graph(G, d1, d2 = 0, vertex_labels = True):
 
     # Return plot object with colors added
     return G.graphplot(vertex_colors = d, vertex_labels = vertex_labels)
+
+
+## ELI: Function to add color on the spine of the isogeny graph
+
+## Inputs: G - isogeny graph; vertex_labels - whether to label vertices in output plot
+## Outputs: graphplot object
+def color_spine(G, vertex_labels = True):
+    Fp_verts = [vert for vert in G.vertices() if vert^p == vert]
+
+    return G.graphplot(vertex_colors = {'#868686' : Fp_verts}, vertex_labels = vertex_labels)

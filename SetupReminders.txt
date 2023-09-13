@@ -9,3 +9,7 @@ Ex (attach ALL files in folder):
 path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/"
 filenames = os.listdir(path)
 attach(*[path + filenames[i] for i in [0..len(filenames)-1]])
+
+Path to my data folder for reading and writing data:
+
+data_path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/Data"
