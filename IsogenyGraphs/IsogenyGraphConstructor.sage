@@ -5,10 +5,6 @@
 mpdb = ClassicalModularPolynomialDatabase()
 
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
-# NOTE: The undirected flag should always be left as True for now - the directed version
-#       created in Adventures in SS land is not actually the directed isogeny graph, and 
-#       so this should not be used until I create an alternate constructor that makes the actual
-#       directed isogeny graph.
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree, undirected = True):
         if undirected == True:
@@ -110,8 +106,7 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
         j1 = not_visited.pop()
         visited.add(j1)
         for j2 in get_neighbors(j1):
-            if j1 < j2 or j1 == j2:
-                G.add_edge([j1,j2])
+            G.add_edge([j1,j2])
             if j2 not in visited and j2 not in not_visited:
                 not_visited.add(j2)
         count += 1
