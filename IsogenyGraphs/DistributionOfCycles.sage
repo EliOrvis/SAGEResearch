@@ -71,3 +71,64 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
     df.to_pickle(outfile_name + ".pkl")
     
     return
+
+  ## This function returns all imaginary quadratic discriminants where <ell> has order <order>
+  #  Inputs: ell - prime 
+
+def get_discriminants_by_ell_order(ell, order):
+
+  power = ell^order
+
+  # Compute discriminant bound - this uses that the smallest number other than 1
+  #   represented by x^2 + p_d xy + (p_d - d)/4 y^2 is (p_d - d)/4.
+  # This is the bound such that any D representing <power> has -D <= <bound>
+  disc_bound = 4*(power) - 1
+
+  # We will store relevant discriminants here
+  discs = []
+
+  # Loop through discriminants:
+  for d in [1..disc_bound]:
+
+    # skip if -d is not 0 or 1 mod 4
+    if -d % 4 in [2,3]:
+      continue
+
+    # Set binary quadartic form
+    pd = ZZ(d % 2) 
+    Q = QuadraticForm(ZZ, 2, [1, pd, (pd + d)/4])
+
+    # Skip if order wtih discriminant d is ell fundamental
+    if ell.divides(-d / fundamental_discriminant(-d)):
+      continue
+
+    # Since the order is ell-fundamental, we can use Dedekind-Kummer to check if ell splits.
+    #  Otherwise skip.
+    poly = Q.polynomial()(x, 1)
+
+    ell_factors = poly.change_ring(GF(ell)).factor()
+    
+    if len(ell_factors) == 1:
+      continue
+
+    # Skip if binary quadratic form represents a power of <ell> less than <ell^order>.
+    # These are the cases where the order of ell is less than order.
+
+    # These are vectors of all representations for values at most ell^i
+    representations = Q.representation_vector_list(power + 1)
+
+    # These are the representations of powers of ell less than ell^order
+    ell_reps = flatten([representations[ell^i] for i in [1..order - 1]])
+
+    # check if any of the representations are proper (no zeros and coprime entries), and skip if so:
+    if any([(0 not in vect) and gcd(vect) == 1 for vect in ell_reps]):
+      continue
+    
+
+    # Return -d if all else has skipped, and Q represents ell^order properly:
+    power_reps = representations[power]
+    
+    if any([(0 not in vect) and gcd(vect) == 1 for vect in power_reps]):
+      discs.append(-d)
+
+  return discs 
