@@ -73,7 +73,13 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
     return
 
   ## This function returns all imaginary quadratic discriminants where <ell> has order <order>
-  #  Inputs: ell - prime 
+  #  Inputs: ell - prime; order - positive integer
+  #  Outputs: discs - list of tuples of the form (d, N), where d is an imaginary quadratic discriminant
+  #                   (not necessarily fundamental) such that 
+  #                   (1) <ell> does not divide the conductor of O_d
+  #                   (2) The order of <ell> in the class group of O_d is <order>
+  #                   (3) <ell> splits in O_d,
+  #                   and N is the class number of O_d
 
 def get_discriminants_by_ell_order(ell, order):
 
@@ -98,8 +104,10 @@ def get_discriminants_by_ell_order(ell, order):
     pd = ZZ(d % 2) 
     Q = QuadraticForm(ZZ, 2, [1, pd, (pd + d)/4])
 
-    # Skip if order wtih discriminant d is ell fundamental
-    if ell.divides(-d / fundamental_discriminant(-d)):
+    # Skip if order wtih discriminant d is not ell fundamental
+    conductor = (-d / fundamental_discriminant(-d))^(1/2)
+
+    if ell.divides(conductor):
       continue
 
     # Since the order is ell-fundamental, we can use Dedekind-Kummer to check if ell splits.
@@ -125,10 +133,19 @@ def get_discriminants_by_ell_order(ell, order):
       continue
     
 
-    # Return -d if all else has skipped, and Q represents ell^order properly:
+    # Return (-d, N) if all else has skipped, and Q represents ell^order properly:
     power_reps = representations[power]
     
     if any([(0 not in vect) and gcd(vect) == 1 for vect in power_reps]):
-      discs.append(-d)
+      # This is the case we want, so we compute the class number of the order of discriminant -d
+      # <poly> has discriminant -d, so we generate the order defined by poly
+      O.<a> = EquationOrder(poly)
+      
+      # Validation to make sure I didn't mess up any of the cases:
+      if O.discriminant() != -d:
+        print(d)
+        raise RuntimeError("There is an issue with the implementation: the order for the class number does not have the right discriminant!")
+
+      discs.append((-d, O.class_number()))
 
   return discs 
