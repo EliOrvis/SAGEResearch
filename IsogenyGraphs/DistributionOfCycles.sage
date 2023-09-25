@@ -7,6 +7,7 @@
 import pandas as pandas
 import pickle as pkl
 import numpy as np
+import itertools
 
 ## This function creates data on the odd cycles of a given length for a range of primes and ell values
 #  Inputs:  prime_range - range of primes (p in isogeny notation) to create data for, given as list of ints;
@@ -112,7 +113,8 @@ def get_discriminants_by_ell_order(ell, order):
 
     # Since the order is ell-fundamental, we can use Dedekind-Kummer to check if ell splits.
     #  Otherwise skip.
-    poly = Q.polynomial()(x, 1)
+    R.<x> = ZZ[]
+    poly = R(Q.polynomial()(x, 1))
 
     ell_factors = poly.change_ring(GF(ell)).factor()
     
@@ -143,9 +145,229 @@ def get_discriminants_by_ell_order(ell, order):
       
       # Validation to make sure I didn't mess up any of the cases:
       if O.discriminant() != -d:
-        print(d)
         raise RuntimeError("There is an issue with the implementation: the order for the class number does not have the right discriminant!")
 
       discs.append((-d, O.class_number()))
 
   return discs 
+
+## This function takes in a an <ell> value, and a list of cycle lengths, and returns moduli conditions on p that will guarantee no cycles of those lengths
+## WARNING: THIS TAKES A REALLY LONG TIME. IF YOU JUST WANT TO CHECK WHETHER THERE EXIST SOLUTIONS, SET <check_n> TO BE THE NUMBER OF SOLUTIONS YOU WANT
+#  Inputs: ell - positive prime representing isogeny degree; cycle_list - list of positive integers >= 3 representing cycle lengths
+#          check_n - Boolean flag, if True then the program will just return the modulus and solution as soon as it finds one solution, rather than looking for all of them
+#  Outputs: res_dict - dictionary whose key is a modulus with values the values that guarantee if p is equivalent to one of these values mod the modulus, 
+#                       then there are no cycles of length any of the lenghts in <cycle_list>.
+def p_conditions_to_prohibit_cycles(ell, cycle_list, check_n = 20):
+
+  # Get discriminant list.
+  discs = []
+  for length in cycle_list:
+    disc_info = get_discriminants_by_ell_order(ell, length)
+    just_discs = [d[0] for d in disc_info]
+    discs = discs + just_discs
+
+  # Pass this to p_split_residues_from_discs
+  res_dict = p_split_residues_from_discs(discs, check_n = check_n)
+
+  return res_dict
+
+
+## This function returns the list of residues where all the discriminants in <disc_list> will have p split 
+## Note that this uses the much longer (but conceptually simple) function p_split_residues (below)
+#  Inputs: disc_lst - list of imaginary quadratic discriminants, just_check - Boolean, if True the function will
+#                     just return the modulus and one solution once a solution is found.
+#  Outputs: res_dict - dictionary whose keys are moduli and values are residues in that modulus that will guarantee
+#                      that p splits in all the discriminants
+def p_split_residues_from_discs(disc_list, check_n):
+
+  # Create a dictionary whose keys are the modulus condition for each discriminant, and whose values are the moduli making p split
+  disc_dict = {}
+  for d in disc_list:
+    d_dict = p_split_residues(d)
+    for key in d_dict:
+      # The line below is in case the same modulus shows up for two different orders
+      # This can happen, but I think we'll always end up with the same conditions anyway, so
+      #   this is probably unnecessary.
+      if key in disc_dict.keys():
+        disc_dict[key] += d_dict[key]
+        # This line is just removing duplicates
+        disc_dict[key] = list(set(disc_dict[key]))
+      else:
+        disc_dict[key] = d_dict[key]
+
+  # New modulus is the lcm of the moduli for the inputs
+  key_list = [key for key in disc_dict]
+  modulus = lcm(key_list)
+
+  res_dict = {modulus : []}
+
+  # For each combination of one value from each modulus, we need to check if that combo has a CRT solution, and save it if so
+  values_list = [disc_dict[key] for key in disc_dict]
+
+  for value_set in itertools.product(*values_list):
+    try:
+      value = CRT_list(list(value_set), key_list)
+      res_dict[modulus].append(value)
+      if len(res_dict[modulus]) >= check_n:
+        return res_dict
+    except:
+      continue
+
+  return res_dict
+
+
+
+
+## This function returns the list of residues mod the squarefree part of d or 4 or 8 times this where d is a square mod p
+#  Inputs: d - imaginary quadratic discriminant
+#  Outputs: res_dict - dictionary <{modulus: [list of residues]}>
+
+
+def p_split_residues(d):
+  
+  # Get squarefree part of -d 
+  sqrf_d = (-d).squarefree_part()
+
+  # All squarefree factors odd factors. We remove 2 if it occurs since we handle this separately
+  #  in the quadratic reciprocity arguments
+  sqrf_factors = [d[0] for d in sqrf_d.factor() if d != 2]
+
+  # These will store lists of values mod factors where legendre symbol is 1 (or 0), -1, respectively
+  # NOTE: we exclude legendre symbol 0 in the first case since we don't want p to be equal to one of the factors
+  #       (this would mean p is ramified in O_d, so O_d appears in the SS-ellI graph) 
+
+  fact_quad_res = {fact: [x for x in range(fact) if kronecker(x, fact) == 1] for fact in sqrf_factors}
+  fact_quad_nonres = {fact: [x for x in range(fact) if kronecker(x, fact) == -1] for fact in sqrf_factors}
+
+  # To determine congruence conditions, we will check how many primes dividing <sqrf_d> are 3 mod 4
+  three_mod_four_factors = [fact for fact in sqrf_factors if fact % 4 == 3]
+
+  # If this is not divisible by 2, we get congruence conditions modulo either <sqrf_d> or <4*sqrf_d>
+  if 2.divides(sqrf_d) == False:
+
+    # If there are an odd number of factors that are 3 mod 4, then the congruence conditions
+    # determining whether d is a square mod p are just mod <sqrf_d>, otherwise mod <4*sqrf_d>
+    #   See RJ 09/24/2023 (or purple notebook at home if I don't get around to writing this up)  
+    if len(three_mod_four_factors) % 2 == 1:
+
+      # This dictionary will store outputs
+      res_dict = {sqrf_d : []}
+
+      # Loop over all subsets of even size of factors, and choose any quadratic non-residues from
+      # those factors, and quadratic residues from all other factors. Then find crt congruences 
+      # from these lists.
+
+      # This iterator will let us loop over 0, 2, 4, etc.
+      for i in range(floor(len(sqrf_factors)/2) + 1):
+
+        # This iterator loops over all choices of a particular set of size 2*i of factors
+        for comb in itertools.combinations(sqrf_factors, 2*i):
+          
+          # Choose the quadratic non-residues for the factors in comb and residues for the others
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          
+          # For every combination of residues, add the modulus given by the chinese remainder theorem
+          for ress in itertools.product(*residues):
+            res_dict[sqrf_d].append(CRT_list(list(ress), sqrf_factors))
+
+    # This case has a similar structure, but now the congruences are modulo 4*sqrf_d, because the cases are different depending
+    # on p mod 4.
+    else:
+
+      res_dict = {4*sqrf_d : []}
+
+      # If p is 1 mod 4, we do the same process as the last case, but include the condition that p is 1 mod 4 in the final CRT call
+      for i in range(floor(len(sqrf_factors)/2) + 1):
+        for comb in itertools.combinations(sqrf_factors, 2*i):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 1 in the values and 4 in the moduli in this call to make sure we are taking p % 4 == 1
+            res_list = list(ress)
+            res_list.append(1)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(4)
+            res_dict[4*sqrf_d].append(CRT_list(res_list, sqrf_list))
+
+      # The other case is p % 4 == 3, in this case we want to choose an odd number of -1s instead of even
+        for comb in itertools.combinations(sqrf_factors, 2*i + 1):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 3 in the values and 4 in the moduli in this call to make sure we are taking p % 4 == 3
+            res_list = list(ress)
+            res_list.append(3)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(4)
+            res_dict[4*sqrf_d].append(CRT_list(res_list, sqrf_list))
+
+  # If <sqrf_d> is divisible by 2, we get congruence conditions modulo <8*sqrf_d>
+  if 2.divides(sqrf_d) == True:
+    
+    res_dict = {8*(sqrf_d/2) : []}
+
+    # If there are an odd number of square free factors that are 3 mod 4, then we want a +1 in the product when p is 1, -1 mod 8 and -1 otherwise
+    #   See RJ 09/24/2023 (or purple notebook at home if I don't get around to writing this up)  
+    if len(three_mod_four_factors) % 2 == 1:
+
+      # These are the 1, -1 mod 8 cases, we want an even number of -1s here
+      for i in range(floor(len(sqrf_factors)/2) + 1):
+        for comb in itertools.combinations(sqrf_factors, 2*i):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 1, 7 in the values and 8 in the moduli in this call to make sure we are taking p % 8 == pm 1
+            res_list_1 = list(ress)
+            res_list_7 = list(ress)
+            res_list_1.append(1)
+            res_list_7.append(7)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(8)
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_1, sqrf_list))
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_7, sqrf_list))
+
+      # These are the 3, -3 mod 8 cases, we want an odd number of -1s here
+        for comb in itertools.combinations(sqrf_factors, 2*i + 1):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 3, 5 in the values and 8 in the moduli in this call to make sure we are taking p % 8 == pm 1
+            res_list_3 = list(ress)
+            res_list_5 = list(ress)
+            res_list_3.append(3)
+            res_list_5.append(5)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(8)
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_3, sqrf_list))
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_5, sqrf_list))
+
+    # If there are an even number of square free factors that are 3 mod 4, then we want a +1 in the product when p is 1, 3 mod 8 and -1 otherwise
+    #   See RJ 09/24/2023 (or purple notebook at home if I don't get around to writing this up)  
+    else:
+
+       # These are the 1, 3 mod 8 cases, we want an even number of -1s here
+      for i in range(floor(len(sqrf_factors)/2) + 1):
+        for comb in itertools.combinations(sqrf_factors, 2*i):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 1, 3 in the values and 8 in the moduli in this call to make sure we are taking p % 8 == pm 1
+            res_list_1 = list(ress)
+            res_list_3 = list(ress)
+            res_list_1.append(1)
+            res_list_3.append(3)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(8)
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_1, sqrf_list))
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_3, sqrf_list))
+
+      # These are the 5, 7 mod 8 cases, we want an odd number of -1s here
+        for comb in itertools.combinations(sqrf_factors, 2*i + 1):
+          residues = [fact_quad_res[factor] if factor not in comb else fact_quad_nonres[factor] for factor in sqrf_factors]
+          for ress in itertools.product(*residues):
+            # Include 5, 7 in the values and 8 in the moduli in this call to make sure we are taking p % 8 == pm 1
+            res_list_5 = list(ress)
+            res_list_7 = list(ress)
+            res_list_5.append(5)
+            res_list_7.append(7)
+            sqrf_list = [fact for fact in sqrf_factors]
+            sqrf_list.append(8)
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_5, sqrf_list))
+            res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_7, sqrf_list))
+
+  return res_dict
