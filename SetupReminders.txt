@@ -4,11 +4,14 @@ Ex:
 
  attach("/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/[Document name].sage")
 
-Ex (attach ALL files in folder):
+Ex (attach ALL files in folder) (NOTE: This also attaches all files in my Misc Folder, as these are general utilities):
 
 path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/[Folder name]/"
+misc_path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/Misc/"
 filenames = os.listdir(path)
+misc_filenames = os.listdir(misc_path)
 attach(*[path + filenames[i] for i in [0..len(filenames)-1]])
+attach(*[misc_path + misc_filenames[i] for i in [0..len(misc_filenames)-1]])
 
 Path to my data folder for reading and writing data:
 
