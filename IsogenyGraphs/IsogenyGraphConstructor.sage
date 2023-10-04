@@ -24,6 +24,10 @@ class IsogenyGraph():
         return self._prime
     def isogeny_degree(self):
         return self._isogeny_degree
+    # Method to return the number of spine vertices. 
+    # This can be faster and easier than finding all vertices on the spine directly for large graphs
+    def n_spine_verts(self):
+        return get_n_spine_verts_from_p(self.prime())
 
     # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
     # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
@@ -170,6 +174,27 @@ def get_CM_vertices(G, d):
 
     #return vertices found above
     return [hmodroots[i][0] for i in (0..len(hmodroots)-1)]
+
+###  Function to return the number of spine vertices, without computing the graph. See Adventures paper for justification
+
+## Inputs: p - odd prime number;
+## Outputs: integer number of spine vertices for G(p,ell). This number is independent of ell
+def get_n_spine_verts_from_p(p):
+    # minor validation step:
+    if p.is_prime() == False or p == 2:
+         raise TypeError("Input must be an odd prime.")
+    
+    # Compute quadratic field
+    K = QuadraticField(-p)
+
+    # Depending on p mod 8, we return either the class number, twice the class number, or half the class number
+    if p % 4 == 1:
+        return (1/2)*K.class_number()
+    else:
+        if p % 8 == 7:
+            return K.class_number()
+        if p % 8 == 3:
+            return 2*K.class_number()
 
 ### ELI: Function to color the vertices of an isogeny graph that have endomorphism rings by
 ###      the maximal order O_d1, O_d2 for fundamental discriminants d1, d2
