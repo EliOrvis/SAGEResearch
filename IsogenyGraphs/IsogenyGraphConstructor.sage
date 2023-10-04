@@ -6,11 +6,11 @@ mpdb = ClassicalModularPolynomialDatabase()
 
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
 class IsogenyGraph():
-    def __init__(self, prime, isogeny_degree, undirected = True):
+    def __init__(self, prime, isogeny_degree, undirected = False):
         if undirected == True:
-            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree).to_undirected()
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, undirected = True)
         else:
-            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree)
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, undirected = False)
 
         # Relabel multiple edges to distinguish in path-length functions
         relabel_multiedges(self._graph)
@@ -58,10 +58,11 @@ class IsogenyGraph():
 ### Code from "Adventures in Supersingularland" https://arxiv.org/abs/1909.07779
 ### Authors: Sarah Arpin, Catalina Camacho-Navarro, Kristin Lauter, Joelle Lim, Kristina Nelson, Travis Scholl, Jana Sotáková.
 
-### ELI: Minor modification to use Kohel database instead of hardcoded modular polynomials
+### ELI: Minor modification to use Kohel database instead of hardcoded modular polynomials, added undirected flag to give the option of an appropriate undirected
+####     graph (somewhat messed up possibly at 0 and 1728)
 
 
-def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
+def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
     """
     Given a prime p, this function returns
     the l-isogeny graph of supersingular elliptic
@@ -106,17 +107,31 @@ def build_isogeny_graph_over_Fpbar(p, l, steps=oo):
     visited = set()
     not_visited = set([j0])
     count = 0
-    while not_visited:
-        j1 = not_visited.pop()
-        visited.add(j1)
-        for j2 in get_neighbors(j1):
-            G.add_edge([j1,j2])
-            if j2 not in visited and j2 not in not_visited:
-                not_visited.add(j2)
-        count += 1
-        if count == steps:
-            break
-    return G
+    if undirected == True:
+        while not_visited:
+            j1 = not_visited.pop()
+            visited.add(j1)
+            for j2 in get_neighbors(j1):
+                if j1 < j2 or j1 == j2:
+                    G.add_edge([j1,j2])
+                if j2 not in visited and j2 not in not_visited:
+                    not_visited.add(j2)
+            count += 1
+            if count == steps:
+                break
+        return G.to_undirected()
+    else:
+        while not_visited:
+            j1 = not_visited.pop()
+            visited.add(j1)
+            for j2 in get_neighbors(j1):
+                G.add_edge([j1,j2])
+                if j2 not in visited and j2 not in not_visited:
+                    not_visited.add(j2)
+            count += 1
+            if count == steps:
+                break
+        return G
 
 
 ### Function to relabel all multiple edges in a graph so that each edge has a unique (numeric) label
