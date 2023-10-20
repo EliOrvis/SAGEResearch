@@ -3,22 +3,51 @@
 # Function to give a random prime in a particular range with a particular modulo condition. Code from David Lowry-Duda
 
 def random_prime_in_a_mod_b(lowerbound, upperbound, a, b, proof=False):
-    """
-    Returns a random prime in [lowerbound, upperbound]
-    that is congruent to a mod b.
-    """
-    if not gcd(a, b) == 1:
-        raise ValueError("a and b are not coprime")
-    if not lowerbound < upperbound:
-        raise ValueError("lowerbound is not smaller than upperbound")
-    if proof:
-        prime_test = is_prime
+  """
+  Returns a random prime in [lowerbound, upperbound]
+  that is congruent to a mod b.
+  """
+  if not gcd(a, b) == 1:
+      raise ValueError("a and b are not coprime")
+  if not lowerbound < upperbound:
+      raise ValueError("lowerbound is not smaller than upperbound")
+  if proof:
+      prime_test = is_prime
+  else:
+      prime_test = is_pseudoprime
+  while True:
+      n = randint(lowerbound // b, upperbound // b)
+      p = n * b + a
+      if p < lowerbound or p > upperbound:
+          continue
+      if prime_test(p):
+          return p
+
+# Function to return the genus number of an imaginary quadratic discriminant.
+# This is the number of two torsion elements in the class group. For proof, see Cox Proposition 3.11.
+def genus_number_of_d(d):
+  # Validation.
+  if d >= 0 or d % 4 in [2,3]:
+    raise ValueError("%s is not an imaginary quadratic discriminant."%(d))
+
+  primes_dividing_d = d.prime_divisors()
+
+  odd_primes_dividing_d = [div for div in primes_dividing_d if div % 2 == 1]
+
+  # r is the number of odd primes dividing d
+  r = len(odd_primes_dividing_d)
+
+  # mu is defined in cases
+  if d % 4 == 1:
+    mu = r
+  else:
+    n = -d/4
+    if n % 8 == 0:
+      mu = r + 2
+    elif n % 8 == 3 or n % 8 == 7:
+      mu = r
     else:
-        prime_test = is_pseudoprime
-    while True:
-        n = randint(lowerbound // b, upperbound // b)
-        p = n * b + a
-        if p < lowerbound or p > upperbound:
-            continue
-        if prime_test(p):
-            return p
+      mu = r + 1
+
+  return 2^(mu - 1)
+

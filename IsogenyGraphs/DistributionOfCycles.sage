@@ -371,3 +371,30 @@ def p_split_residues(d):
             res_dict[8*(sqrf_d/2)].append(CRT_list(res_list_7, sqrf_list))
 
   return res_dict
+
+## This function takes in a discriminant, prime, and returns the number of cycles along the spine, as long as the prime is larger than the discriminant 
+#  Inputs: d - an imaginary quadratic discriminant; p - a prime number larger than the absolute value of d
+#  Outputs: n - the number of cycles that the discriminant produces along the spine.
+#           Note that the result is the number of *undirected* cycles, and therefore half of the number returned by G.all_simple_cycles()
+def n_spine_cycles(d, p):
+
+  if abs(d) >= p:
+    raise ValueError("For accuracy, absolute value of d must be less than or equal to p.")
+
+  # If p is not inert in the order of discriminant d, then d gives no cycles (along the spine or otherwise).
+  if legendre_symbol(d,p) == 1:
+    return 0
+
+  # Get prime factors of d
+  prime_factors = d.prime_factors()
+
+  # d gives no cycles if the coditions of Chen, Xue are not satisfied:
+  for div in prime_factors:
+    if div == 2 and not (div % 8 == 7 or (-p + (d/4)) % 8 in [0,1,4] or (-p + d) % 8 == 1):
+      return 0
+    if div != 2 and legendre_symbol(-p,div) != 1:
+      return 0
+
+  # If none of these conditions hold, then return the genus number of d
+  return genus_number_of_d(d)
+
