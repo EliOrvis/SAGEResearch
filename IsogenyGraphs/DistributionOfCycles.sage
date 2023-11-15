@@ -423,3 +423,58 @@ def n_cycles_from_d(d, cln, p, ell, length = False):
   # If everything passes, then we return cln / length.
   return cln / length
 
+## This function takes as input a range of primes, an ell value, and an r value, and returns a dataset of counts of r cycles in the ell isogeny graph, with number along the spine
+## Note that this differs from create_cycle_data, in that here we use the results of my cycles paper, so we can consider MUCH larger primes.
+#  Inputs: p_range - <[lower, upper]>, where <lower> is lower bound on primes to consider, and <upper> is upper bound; ell - isogeny degree; r - cycle length
+#  Outputs: df - pandas dataframe with columns p, ell, r, nt (total # of cycles), ns (total # along the spine), total_verts (# of vertices in graph), spine_verts (# of spine vertices),
+#           and freq_ratio ((ns/spine_verts)/(nt/total_verts)).
+def create_cycle_data_from_class_numbers(p_range, ell, r):
+
+  # First, verify that I have the requested set of discriminants:
+  # NOTE: This assumes that the discriminant data is stored in the right place in my file system
+  try:
+    with open("/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/Data" + "/IsogenyGraphs/cycle_discriminants_" + str(ell) + "_" + str(r) + ".pkl", "rb") as f:
+      # Load discriminants - we assume discriminants are stored as a list of tuples (disc, class number)
+      discriminant_data = pkl.load(f)
+  except:
+    raise ValueError("No discriminant data for ell = %s and r = %s"%(ell, r))
+
+  # Validate that user gave inputs that are large enough for my theorems to hold
+  just_discriminants = [d for (d, cln) in discriminant_data]
+  assert p_range[0] > max(just_discriminants)*(sorted(just_discriminants, reverse = True)[1])/4
+
+  # Create dictionary to store data in
+  dict_data = {"p" : [], "ell" : [], "r" : [], "nt" : [], "ns" : [], "total_verts" : [], "spine_verts" : [], "freq_ratio" : []}
+
+  # Just to keep me sane.
+  counter = 0
+  print("Goal: %s"%(p_range[1]))
+  for p in prime_range(p_range[0], p_range[1]):
+    counter += 1
+    if counter == 50:
+      print(p)
+      counter = 0
+
+    # Total number of cycles is computed by adding up counts for each discriminant 
+    nt = sum([n_cycles_from_d(d,cln,p,ell, length = r) for (d, cln) in discriminant_data])
+    # Number of spine cycles is computed by adding up counts for each discriminant
+    ns = sum([n_spine_cycles(d,p) for (d,cln) in discriminant_data])
+
+    # Total vertices and spine vertices are computed directly
+    total_verts = n_ss_j_invars(p)
+    spine_verts = n_Fp_j_invars(p)
+
+    # Ratio is computed as a float:
+    freq_ratio = float((ns/spine_verts)/(nt/total_verts))
+
+    # Data is stored for this prime:
+    dict_data["p"].append(p)
+    dict_data["ell"].append(ell)
+    dict_data["r"].append(r)
+    dict_data["nt"].append(nt)
+    dict_data["ns"].append(ns)
+    dict_data["total_verts"].append(total_verts)
+    dict_data["spine_verts"].append(spine_verts)
+    dict_data["freq_ratio"].append(freq_ratio)
+
+  return pd.DataFrame(data = dict_data)
