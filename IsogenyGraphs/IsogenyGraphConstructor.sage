@@ -133,6 +133,40 @@ def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
                 break
         return G
 
+### Function to return the number of vertices in the SS isogeny graph over F_p-bar. Does the obvious thing from Silverman.
+##  Inputs: p - prime number
+##  Outputs: number of vertices in SS isogeny graph over F_p bar.
+def n_ss_j_invars(p):
+
+    base = floor(p/12)
+    if p % 12 == 0:
+        return base
+    elif p % 12 in [5, 7]:
+        return base + 1
+    else:
+        return base + 2
+
+### Function to return the number of vertices  w/ j-invar in F_p in the SS isogeny graph over F_p-bar.
+### Uses remark after Definition 2.4 in the Adventures in SSLand paper.
+##  Inputs: p - prime number
+##  Outputs: number of vertices in SS isogeny graph over F_p bar that are defined over F_p.
+def n_Fp_j_invars(p):
+
+    # Two cases for the discriminant from paper cited above.
+    if p % 4 == 1:
+        d = -4*p
+        K = QuadraticField(d)
+        return (1/2)*K.class_number()
+    else:
+        d = -p
+        K = QuadraticField(d)
+        if p % 8 == 7:
+            return K.class_number()
+        else:
+            return 2*K.class_number()
+
+
+
 
 ### Function to relabel all multiple edges in a graph so that each edge has a unique (numeric) label
 ## This is useful when searching for paths in the SSl-I graph and disallowing backtracking, and is used in the IsogenyGraph constructor

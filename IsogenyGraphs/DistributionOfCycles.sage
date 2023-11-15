@@ -398,3 +398,28 @@ def n_spine_cycles(d, p):
   # If none of these conditions hold, then return the genus number of d
   return genus_number_of_d(d)
 
+## This function takes in a discriminant, class number, prime, ell, and cycle length, and returns the number of cycles produced by that discriminant 
+#  Inputs: d - an imaginary quadratic discriminant; cln - class number of d; p - a prime number larger than the absolute value of d; length - cycle length
+#  Outputs: n - the number of cycles that the discriminant produces in G_p.
+#           Note that the result is the number of *undirected* cycles, and therefore half of the number returned by G.all_simple_cycles()
+def n_cycles_from_d(d, cln, p, ell, length = False):
+
+  if abs(d) >= p:
+    raise ValueError("For accuracy, absolute value of d must be less than or equal to p.")
+  if not length.divides(cln):
+    raise ValueError("This function should only be run for discriminants where the length of the cycle divides the class number.")
+
+  # If p is not inert in the order of discriminant d, then d gives no cycles (along the spine or otherwise).
+  if legendre_symbol(d,p) == 1:
+    return 0
+
+  # If length != False, the user gave a specific length, so we validate that ell has that order in the class group of discriminant d
+  K = QuadraticField(d)
+  frakells = K.primes_above(ell)
+  # validate the ell splits in K
+  if len(frakells) != 2:
+    raise ValueError("ell must split in the quadratic field with discriminant d.")
+
+  # If everything passes, then we return cln / length.
+  return cln / length
+
