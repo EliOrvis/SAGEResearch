@@ -183,7 +183,7 @@ def quaternion_elements_by_minpoly(O, norm, trace = None):
   # This line constructs the actual elements
   eles = [sum([a*b for (a,b) in zip(tup,basis)]) for tup in ele_vectors]
 
-  if trace:
+  if trace != None:
     # Return only those elements with specified reduced trace
     return [ele for ele in eles if ele.reduced_trace() == trace]
   else:
@@ -313,3 +313,26 @@ def type_set_representatives(B):
   return type_reps
 
 
+#### This function returns a list of discriminants that embed (not necessarily optimally) into a quaternion order O
+#### NOTE: This is a very simplistic approach. There is possibly a much better approach.
+####       This also assumes (and requires) that the quaternion algebra is B p infinity for some prime p
+##   Inputs - O, a quaternion order; ubound, an upper bound on the discriminant search; lbound (optional), lower bound
+##   Outputs - List of discriminants
+def quaternion_order_embedded_discs(O, ubound, lbound = 3):
+  # Validation
+  assert(O.quaternion_algebra().discriminant().is_prime())
+
+  embedded_discs = []
+
+  # Loop over all numbers from lbound to ubound, add to list if there are non-integer elements with the given discriminant 
+  for d in [lbound..ubound]:
+    # Check if -d is an imaginary quadratic discriminant
+    if -d % 4 in [0,1]:
+      # Find quaternion elements in O with min poly of discriminant -d
+      eles = quaternion_elements_by_minpoly(O, (ZZ(d % 2) + d)/4, -ZZ(d % 2))
+      # Add -d to the list if any of these elements are not in Z
+      if any([x not in ZZ for x in eles]):
+        embedded_discs.append(-d)
+
+  # Return the norm form
+  return embedded_discs

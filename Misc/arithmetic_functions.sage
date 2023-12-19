@@ -30,7 +30,7 @@ def genus_number_of_d(d):
   if d >= 0 or d % 4 in [2,3]:
     raise ValueError("%s is not an imaginary quadratic discriminant."%(d))
 
-  primes_dividing_d = d.prime_divisors()
+  primes_dividing_d = ZZ(abs(d)).prime_divisors()
 
   odd_primes_dividing_d = [div for div in primes_dividing_d if div % 2 == 1]
 
@@ -50,4 +50,14 @@ def genus_number_of_d(d):
       mu = r + 1
 
   return 2^(mu - 1)
+
+# This function returns the class number of an imaginary quadratic order from the discriminant
+# Note that the order need not be maximal, which is why this is more general than QuadraticField(d).class_number()
+
+def imaginary_quadratic_order_class_number(d):
+  # Create the order of discriminant d
+  pd = ZZ(d % 2)
+  O.<z> = EquationOrder(x^2 + pd*x + (pd - d)/4)
+
+  return O.class_number()
 

@@ -9,6 +9,14 @@ import pickle as pkl
 import numpy as np
 import itertools
 
+# This loads James's isogeny graph code, which is used to collect data because it is much faster than the sage version.
+# Note that as of 12/6/2023, this has to be run from the same directory where James's code is installed. This is an issue
+#  with his programs that he is working on fixing.
+try:
+  load("ssl_pari.sage")
+except:
+  print("Warning: Unable to load James' Pari code.")  
+
 ## This function creates data on the odd cycles of a given length for a range of primes and ell values
 #  Inputs:  prime_range - range of primes (p in isogeny notation) to create data for, given as list of ints;
 #           isogeny_range - range of isogeny degrees (ell in iso notation), given as list of ints;
@@ -37,9 +45,10 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
         for p in prime_range:
         
             # Create isogeny graph
-            # NOTE: When Isogeny Graph constructor is fixed to have the option of making the actual directed graph, change this line to do that
-            G = IsogenyGraph(prime = p, isogeny_degree = ell).to_directed()
-        
+            G = ssl_graph(p, ell)
+            # Just to keep me sane
+            print(p)
+
             # Compute vertices in spine
             verts = G.vertices()
             spine_verts = [v for v in verts if v^p == v]
@@ -73,14 +82,14 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
     
     return
 
-  ## This function returns all imaginary quadratic discriminants where <ell> has order <order>
-  #  Inputs: ell - prime; order - positive integer
-  #  Outputs: discs - list of tuples of the form (d, N), where d is an imaginary quadratic discriminant
-  #                   (not necessarily fundamental) such that 
-  #                   (1) <ell> does not divide the conductor of O_d
-  #                   (2) The order of <ell> in the class group of O_d is <order>
-  #                   (3) <ell> splits in O_d,
-  #                   and N is the class number of O_d
+## This function returns all imaginary quadratic discriminants where <ell> has order <order>
+#  Inputs: ell - prime; order - positive integer
+#  Outputs: discs - list of tuples of the form (d, N), where d is an imaginary quadratic discriminant
+#                   (not necessarily fundamental) such that 
+#                   (1) <ell> does not divide the conductor of O_d
+#                   (2) The order of <ell> in the class group of O_d is <order>
+#                   (3) <ell> splits in O_d,
+#                   and N is the class number of O_d
 
 def get_discriminants_by_ell_order(ell, order):
 
@@ -150,6 +159,47 @@ def get_discriminants_by_ell_order(ell, order):
       discs.append((-d, O.class_number()))
 
   return discs 
+
+## This function returns all imaginary quadratic discriminants where <ell> splits and has order <order>, but does so in a more elementary way than the previous 
+## For explanations for why this works, see Orientations and Cycles Theorem 7.4
+  #  Inputs: ell - prime; order - positive integer; all_divisors - boolean, returns orders where the order of <ell> divides <order> if True
+  #  Outputs: discs - list of tuples of the form (d, N), where d is an imaginary quadratic discriminant
+  #                   (not necessarily fundamental) such that 
+  #                   (1) <ell> does not divide the conductor of O_d
+  #                   (2) The order of <ell> in the class group of O_d is <order>
+  #                   (3) <ell> splits in O_d,
+  #                   and N is the class number of O_d
+
+def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False):
+
+  # Return the list of numbers x^2 - 4*<ell>^(<order>), for x between 0 and <floor(2*<ell>^(<order>/2)), x not 0 mod <ell>
+  # By the results in the paper cited above, this is all the orders where <ell> splits and has order dividing <order>
+  ubound = floor(2*ell^(order/2))
+  maximal_ds = [x^2 - 4*(ell^order) for x in [0..ubound] if x % ell != 0] 
+  all_ds = flatten([[n/d for d in n.divisors() if d.is_square() and n/d % 4 in [0,1]] for n in maximal_ds])
+
+  # If the user wants orders where the order of <ell> merely divides <order>, we are done.
+  if all_divisors:
+    return [(d,imaginary_quadratic_order_class_number(d)) for d in all_ds]
+
+  # Remove all discriminants that appear for divisors of <order>. This is done by applying the same technique as above
+  # to all <order>/p, where p is a prime factor of <order> or is equal to <order>. Since the process above returns all discriminants where <ell>
+  # has order dividing <order>, if a discriminant appears for any one of these choices, we can remove it.
+
+  ds_to_exclude = set([])
+
+  for fact in flatten([order,order.prime_factors()]):
+    # new order is <order> divided by the factor
+    new_order = order/fact
+    new_ubound = floor(2*ell^(new_order/2))
+    for x in [0..ubound]:
+      if x % ell != 0:
+        ds_to_exclude.add(x^2 - 4*(ell^new_order))
+  
+  # Return discriminants & class numbers for those remaining
+  # <imaginary_quadratic_order_class_number> is a function in my arthimetic_functions.sage code that gives the class number
+  # of an imaginary quadratic order from the discriminant (this works for non-maximal orders) 
+  return [(d,imaginary_quadratic_order_class_number(d)) for d in all_ds if d not in ds_to_exclude]
 
 ## This function takes in a an <ell> value, and a list of cycle lengths, and returns moduli conditions on p that will guarantee no cycles of those lengths
 ## WARNING: THIS TAKES A REALLY LONG TIME. IF YOU JUST WANT TO CHECK WHETHER THERE EXIST SOLUTIONS, SET <check_n> TO BE THE NUMBER OF SOLUTIONS YOU WANT
@@ -478,3 +528,14 @@ def create_cycle_data_from_class_numbers(p_range, ell, r):
     dict_data["freq_ratio"].append(freq_ratio)
 
   return pd.DataFrame(data = dict_data)
+
+## This function computes the expected number of spine cycles as p varies, given ell and r
+## For explanations for why this works, see my cycles paper (theorem number TBD)
+  #  Inputs: ell - prime; order - positive integer;
+  #  Outputs: expected number of spine cycles
+## NOTE: This is DIRECTED cycles in order to agree with Sage's <G.all_simple_cycles()>
+def expected_spine_cycle_count(ell, order):
+
+  # Direct implementation of the formula in my paper
+  return sum([moebius(d)*len(get_discriminants_by_ell_order_fast(ell, ZZ(order/d), all_divisors = True)) for d in order.divisors()])
+
