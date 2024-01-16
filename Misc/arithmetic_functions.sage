@@ -23,6 +23,33 @@ def random_prime_in_a_mod_b(lowerbound, upperbound, a, b, proof=False):
       if prime_test(p):
           return p
 
+# Function to get the coefficients x and y in ax - by == gcd(a,b) in Euclidean algorithm 
+# Copied from https://www.rookieslab.com/posts/extended-euclid-algorithm-to-find-gcd-bezouts-coefficients-python-cpp-code
+
+def extended_euclid_gcd(a, b):
+    """
+    Returns a list `result` of size 3 where:
+    Referring to the equation ax + by = gcd(a, b)
+        result[0] is gcd(a, b)
+        result[1] is x
+        result[2] is y 
+    """
+    s = 0; old_s = 1
+    t = 1; old_t = 0
+    r = b; old_r = a
+
+    while r != 0:
+        quotient = old_r//r 
+        old_r, r = r, old_r - quotient*r
+        old_s, s = s, old_s - quotient*s
+        old_t, t = t, old_t - quotient*t
+
+    # ADDED: negate everything if the gcd returned here is negative
+    # This way we always have gcd(a,b) = <old_r> = <old_s*a + old_t*b>, and gcd(a,b) > 0
+    if old_r < 0:
+      old_r, old_s, old_t = -old_r, -old_s, -old_t
+    return [old_r, old_s, old_t]
+
 # Function to return the genus number of an imaginary quadratic discriminant.
 # This is the number of two torsion elements in the class group. For proof, see Cox Proposition 3.11.
 def genus_number_of_d(d):
@@ -98,3 +125,69 @@ def genus_field(K):
   assert M.absolute_degree() == 2*genus_number_of_d(d)
 
   return M
+
+
+### This function implements Dirichlet composition on positive definite quadratic forms.
+### All of the theory can be found on pgs 39 - 40 of Cox's book.
+##  Inputs: qf1, qf2 - two binary quadratic forms
+##  Outputs: qf3 - the reduced form equivalent to the Dirichlet composition of these two forms
+
+def Dirichlet_compose(qf1, qf2):
+
+  # Some error checking:
+  if qf1.discriminant() != qf2.discriminant():
+    raise ValueError("Both forms must have the same discriminant.")
+
+  d = qf1.discriminant()
+
+  # To make sure that Dirichlet composition is defined on the level of forms, we have to change <qf2> to
+  # a properly equivalent form whose leading coefficient is coprime to the leading coefficient of <qf1>
+
+  # First, get the coefficients of the first form
+  coeffs1 = qf1.polynomial().coefficients()
+  a = coeffs1[0]
+  if len(coeffs1) == 2:
+    b = 0
+    c = coeffs1[1]
+  else:
+    b = coeffs1[1]
+    c = coeffs1[2]
+
+  # Find a prime represented by qf2 that does not divide <a>
+  # Start the search with the second smallest value represented by qf2
+  #  in order to avoid excessivley long searches
+  p = qf2(0,1).next_prime()
+  found = False
+  while found == False:
+    if qf2.solve_integer(p) != None and p.divides(a) == False:
+      found = True
+      # These are stored as they will be used later
+      r,s = qf2.solve_integer(p)
+    else:
+      p = p.next_prime()
+
+  # Transform <qf2> to an equivalent form whose leading coefficient is p
+  euclid_coeffs = extended_euclid_gcd(r,s)
+  t, u = euclid_coeffs[1], -euclid_coeffs[2]
+
+  # Coefficients of the second form are used for the transformation
+  coeffs2 = qf2.polynomial().coefficients()
+  ap_old = coeffs2[0]
+  if len(coeffs2) == 2:
+    bp_old = 0
+    cp_old = coeffs2[1]
+  else:
+    bp_old = coeffs2[1]
+    cp_old = coeffs2[2]
+
+  # coefficients of new form can be obtained directly
+  ap = qf2(r,s)
+  bp = (2*ap_old*r*u + bp_old*r*t + bp_old*u*s + 2*cp_old*s*t)
+  cp = qf2(u,t)
+
+  # Compute B
+  B = [x for x in [0..2*a*ap] if (x % (2*a) == b % (2*a) and x % (2*ap) == bp % (2*ap) and x^2 % (4*a*ap) == d % (4*a*ap))][0]
+
+  # Return form
+  return BinaryQF([a*ap, B, (B^2 - d)/(4*a*ap)]).reduced_form()
+
