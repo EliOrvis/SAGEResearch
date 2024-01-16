@@ -191,3 +191,31 @@ def Dirichlet_compose(qf1, qf2):
   # Return form
   return BinaryQF([a*ap, B, (B^2 - d)/(4*a*ap)]).reduced_form()
 
+### This function returns the genera of binary quadratic forms with discriminant d.
+##  Inputs: d - negative discriminant
+##  Outputs: genera - list of lists, with each list one genus
+
+def binary_qf_genera(d):
+
+  # First, get all reduced binary quadratic forms of discriminant d
+  qfs = BinaryQF_reduced_representatives(d)
+
+  # Find the principal genus, which is the set of all squares
+  principal_genus = []
+  for qf in qfs:
+    qfsq = Dirichlet_compose(qf,qf)
+    if qfsq not in principal_genus:
+      principal_genus.append(qfsq)
+
+  # Now return list of cosets:
+  genera = []
+  # Sets are used to quickly check inclusion of lists without accounting for order
+  genera_sets = []
+  for qf in qfs:
+    qf_coset = [Dirichlet_compose(qf, pqf) for pqf in principal_genus]
+    qf_coset_set = set(qf_coset)
+    if qf_coset_set not in genera_sets:
+      genera.append(qf_coset)
+      genera_sets.append(qf_coset_set)
+
+  return genera
