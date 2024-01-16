@@ -61,3 +61,40 @@ def imaginary_quadratic_order_class_number(d):
 
   return O.class_number()
 
+
+### This function returns the genus field of an imaginary quadratic field
+##  Inputs: K - an imaginary quadratic field number field
+##  Outputs: M - the genus field of K, as a relative number field extending K
+
+def genus_field(K):
+
+  # Create a polynomial ring so that we can use the variable x later
+  R.<x> = ZZ[]
+
+  # Get the discriminant of K and prime factors
+  d = K.discriminant()
+  prime_list = d.prime_divisors()
+
+  # Adjust all the odd prime factors to be 1 mod 4:
+  p_stars = [(-1)^((p - 1)/2)*p for p in prime_list if p != 2]
+
+  # Set M = K so that we can extend K prime-by-prime
+  M = K
+
+  # Loop over the pstars and add them to M if necessary
+  for pstar in p_stars:
+    
+    # If <x^2 + pstar> is already reducible over M, then we don't need to extend M,
+    # so we only do anything if <x^2 + pstar> is irreudiclbe
+    if (x^2 - pstar).change_ring(M).is_irreducible():
+      
+      # The try except here is to catch if the user already has a generator with one of these names
+      try:
+        M = M.extension(x^2 - pstar, 'a' + str(p_stars.index(pstar)))
+      except:
+        M = M.extension(x^2 - pstar, 'b' + str(p_stars.index(pstar)))
+
+  # Minor error checking
+  assert M.absolute_degree() == 2*genus_number_of_d(d)
+
+  return M
