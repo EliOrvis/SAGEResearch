@@ -34,7 +34,7 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 
 	if table_format == True:
 		# Convert into pandas dataframe for easier viewing
-		df = pd.DataFrame(data = path_lengths)	
+		df = pd.DataFrame(data = lengths)	
 		# Set indices to be vertices from valley 1
 		s = pd.Series(vertexset1)
 
@@ -53,6 +53,9 @@ def path_lengths_between_valleys(G, d1, d2, table_format = False):
 ## Outputs: Matrix of path lengths, with indices given by the vertices of G in sorted order
 
 # Note: This function does not actually find the paths (at all). Instead, it uses combinatorics to quickly count such paths.
+# Note 2: On 1/25/2024, long after writing this, I noticed that the matrix sometimes has negative entries. I don't know what these mean! 
+#         They could even be messing up the count of connections between valleys that is done later on, but I thought I had tested this?
+
 
 def paths_of_length_n_matrix(G, length):
 
@@ -71,7 +74,7 @@ def paths_of_length_n_matrix(G, length):
 	# See RJ 5/5/2023 - this is from Kempton 2016
 	genfun = -(z^2 - 1)/((Dtemp - 1)*z^2 - Atemp*z + 1)
 
-	# Get coefficient on x^length in series expanssion
+	# Get coefficient on x^length in series expansion
 	# Evaluating this will give the matrix of NBW counts
 	coeff = genfun.series(z, length + 1).coefficient(z,length)	
 
@@ -107,3 +110,18 @@ def CM_pairs_separated_by_path_length(G, d1, d2, length):
 				pairs.append((v,w))
 
 	return pairs
+
+### Returns the number of (non-backtracking) paths between two vertices of a given length n, counted directly from the graph
+## Inputs: G - an isogeny graph object; v1, v2 - vertices of G; n - path lengths to search for
+## Outputs: n - number of paths of specified length
+
+def n_paths_of_length_n(G, v1, v2, n):
+	# Making sure we have the right vertices
+	assert v1 in G.vertices(sort = True) and v2 in G.vertices(sort = True)
+
+	# Get matrix of paths of length n
+	M = paths_of_length_n_matrix(G, n)
+
+	# Return the corresponding entry
+	verts = G.vertices(sort = True)
+	return M[verts.index(v1)][verts.index(v2)]

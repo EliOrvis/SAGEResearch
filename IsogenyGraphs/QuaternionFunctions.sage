@@ -336,3 +336,25 @@ def quaternion_order_embedded_discs(O, ubound, lbound = 3):
 
   # Return the norm form
   return embedded_discs
+
+  #### This function is a very naive approach to finding the number of optimal embeddings of a discriminant with prime-power 
+  ####  conductor in a quaternion order of Bpinfinity
+  ##   Inputs - O, a quaternion order; d - a fundamental discriminant; ell - a prime; n - non-negative integer
+  ##   Outputs - number of optimal embeddings of <(ell^2)^i d> in <O> for each i up to n 
+
+def naive_optimal_embedding_count(O, d, ell, n):
+  # Make sure we are in Bpinfinit
+  assert(O.quaternion_algebra().discriminant().is_prime())
+
+  # This will store the number of optimal embeddings of <ell^n*d> for each n
+  optimal_n_embeds = []
+  # Loop up to n, and count the number of embeddings of discriminant <ell^n d>
+  for i in [0..n]:
+    disc = ((ell^2)^i)*d
+    eles = quaternion_elements_by_minpoly(O, (ZZ(disc % 2) - disc)/4, -ZZ(disc % 2))
+    # Number of optimal embeddings with conductor ell^(2n) is the number of conjugate pairs
+    #  of elements with that discriminant, minus the number of all previous such pairs, since
+    #  each previous pair gives one non-optimal pair.
+    optimal_n_embeds.append(len(eles)/2 - sum(optimal_n_embeds))
+
+  return optimal_n_embeds
