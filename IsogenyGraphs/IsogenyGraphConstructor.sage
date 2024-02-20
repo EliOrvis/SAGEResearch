@@ -4,6 +4,16 @@
 
 mpdb = ClassicalModularPolynomialDatabase()
 
+# This loads James's isogeny graph code, which is used to construct isogeny graphs because it is much faster than the sage version.
+# Note that there is a failsafe in the isogeny graph constructor, in case this fails for some reason (like the file moving or something).
+try:
+  load("~/Isogeny/ssl_pari.sage")
+  load_success = True
+except:
+  print("Warning: Unable to load James' Pari code.")  
+  load_success = False
+
+# Main class for isogeny graphs
 # IsogenyGraph class inherits from sage.graphs.graph.Graph
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree, undirected = False):
@@ -60,9 +70,13 @@ class IsogenyGraph():
 
 ### ELI: Minor modification to use Kohel database instead of hardcoded modular polynomials, added undirected flag to give the option of an appropriate undirected
 ####     graph (somewhat messed up possibly at 0 and 1728)
+####     Also, major modification to use James' code if possible, which saves substantial time on large primes.
 
 
 def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
+    # First, create the graph with James' code if possible, otherwise, we use the slower SAGE implementation
+    if load_success == True:
+        return ssl_graph(p, l)
     """
     Given a prime p, this function returns
     the l-isogeny graph of supersingular elliptic

@@ -9,14 +9,6 @@ import pickle as pkl
 import numpy as np
 import itertools
 
-# This loads James's isogeny graph code, which is used to collect data because it is much faster than the sage version.
-# Note that as of 12/6/2023, this has to be run from the same directory where James's code is installed. This is an issue
-#  with his programs that he is working on fixing.
-try:
-  load("ssl_pari.sage")
-except:
-  print("Warning: Unable to load James' Pari code.")  
-
 ## This function creates data on the odd cycles of a given length for a range of primes and ell values
 #  Inputs:  prime_range - range of primes (p in isogeny notation) to create data for, given as list of ints;
 #           isogeny_range - range of isogeny degrees (ell in iso notation), given as list of ints;
@@ -45,7 +37,7 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
         for p in prime_range:
         
             # Create isogeny graph
-            G = ssl_graph(p, ell)
+            G = IsogenyGraph(p, ell)
             # Just to keep me sane
             print(p)
 

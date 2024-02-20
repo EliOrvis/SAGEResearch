@@ -176,18 +176,31 @@ def quaternion_elements_by_minpoly(O, norm, trace = None):
   # Get quaternion norm form
   norm_form = O.quadratic_form()
 
+  # Get trace 0 norm form - this will speed things up *dramatically* when trace is 0
+  t0_norm_form = trace_0_norm_form(O)[0]
+
   # Get all elements of norm equal to norm
   # This returns the vector coefficients for the standard basis
-  ele_vectors = norm_form.representation_vector_list(norm + 1)[norm]
-  basis = O.basis()
-  # This line constructs the actual elements
-  eles = [sum([a*b for (a,b) in zip(tup,basis)]) for tup in ele_vectors]
 
-  if trace != None:
-    # Return only those elements with specified reduced trace
-    return [ele for ele in eles if ele.reduced_trace() == trace]
-  else:
+  # If trace is 0, then we use <trace_0_norm_form>
+  if trace == 0:
+    ele_vectors = t0_norm_form.representation_vector_list(norm + 1)[norm]
+    basis = O.basis()
+    eles = [sum([a*b for (a,b) in zip(tup,basis)]) for tup in ele_vectors]
     return eles
+
+  else:
+
+    ele_vectors = norm_form.representation_vector_list(norm + 1)[norm]
+    basis = O.basis()
+    # This line constructs the actual elements
+    eles = [sum([a*b for (a,b) in zip(tup,basis)]) for tup in ele_vectors]
+
+    if trace != None:
+      # Return only those elements with specified reduced trace
+      return [ele for ele in eles if ele.reduced_trace() == trace]
+    else:
+      return eles
 
 #### This function determines whether two quaternion orders are isomorphic, and (optionally)
 #### returns the linear subspace (wrt the standard basis) of elements that conjugate one to the other
@@ -339,10 +352,11 @@ def quaternion_order_embedded_discs(O, ubound, lbound = 3):
 
   #### This function is a very naive approach to finding the number of optimal embeddings of a discriminant with prime-power 
   ####  conductor in a quaternion order of Bpinfinity
-  ##   Inputs - O, a quaternion order; d - a fundamental discriminant; ell - a prime; n - non-negative integer
+  ##   Inputs - O, a quaternion order; d - a fundamental discriminant; ell - a prime; n - non-negative integer;
+  ##            optimal - optional parameter set by default to <True>, will count optimal embeddings if true
   ##   Outputs - number of optimal embeddings of <(ell^2)^i d> in <O> for each i up to n 
 
-def naive_optimal_embedding_count(O, d, ell, n):
+def naive_embedding_count(O, d, ell, n, optimal = True):
   # Make sure we are in Bpinfinit
   assert(O.quaternion_algebra().discriminant().is_prime())
 
@@ -352,9 +366,13 @@ def naive_optimal_embedding_count(O, d, ell, n):
   for i in [0..n]:
     disc = ((ell^2)^i)*d
     eles = quaternion_elements_by_minpoly(O, (ZZ(disc % 2) - disc)/4, -ZZ(disc % 2))
-    # Number of optimal embeddings with conductor ell^(2n) is the number of conjugate pairs
-    #  of elements with that discriminant, minus the number of all previous such pairs, since
-    #  each previous pair gives one non-optimal pair.
-    optimal_n_embeds.append(len(eles)/2 - sum(optimal_n_embeds))
+    # If we are interested in all embeddings, then we just need to divide the number of elements we found by 2
+    if optimal == False:
+      optimal_n_embeds.append(len(eles) / 2)
+    else:
+      # Number of optimal embeddings with conductor ell^(2n) is the number of conjugate pairs
+      #  of elements with that discriminant, minus the number of all previous such pairs, since
+      #  each previous pair gives one non-optimal pair.
+      optimal_n_embeds.append(len(eles)/2 - sum(optimal_n_embeds))
 
   return optimal_n_embeds
