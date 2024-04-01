@@ -39,6 +39,10 @@ class IsogenyGraph():
     def n_spine_verts(self):
         return get_n_spine_verts_from_p(self.prime())
 
+    # Method to return the subgraph induced by the F_p-vertices, i.e. the spine.
+    def spine_subgraph(self):
+        return self.subgraph(vertices = [v for v in self.vertices() if v^p == v])
+
     # Method to return the maximal discriminants such that the elliptic curves with CM by the associated order
     # are supresingular modulo p. ubound and lbound are upper and lower bounds on discriminants returned, respectively.
     def embedded_fundamental_discriminants(self, ubound, lbound = 1):

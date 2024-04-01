@@ -19,7 +19,7 @@ def j_from_order(O):
   while done == False:
     d = d - 1
     # Only consider fundamental discriminants with supersingular reductions modulo p
-    if is_fundamental_discriminant(d) and legendre_symbol(d, p) != 1:
+    if d.is_fundamental_discriminant() and legendre_symbol(d, p) != 1:
       pd = ZZ(d % 2)
       # If there are elements of O with discriminant d, then j is a root of H_D modulo p
       if len(quaternion_elements_by_minpoly(O, (pd - d)/4, trace = -pd)) > 0:

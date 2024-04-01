@@ -356,7 +356,7 @@ def quaternion_order_embedded_discs(O, ubound, lbound = 3):
   ##            optimal - optional parameter set by default to <True>, will count optimal embeddings if true
   ##   Outputs - number of optimal embeddings of <(ell^2)^i d> in <O> for each i up to n 
 
-def naive_embedding_count(O, d, ell, n, optimal = True):
+def naive_embedding_count(O, d, ell = 1, n = 0, optimal = True):
   # Make sure we are in Bpinfinit
   assert(O.quaternion_algebra().discriminant().is_prime())
 
@@ -375,4 +375,9 @@ def naive_embedding_count(O, d, ell, n, optimal = True):
       #  each previous pair gives one non-optimal pair.
       optimal_n_embeds.append(len(eles)/2 - sum(optimal_n_embeds))
 
+  # If n = 0, then we are just looking for the number of embeddings of a particular order, so return that, rather than a list
+  if n == 0:
+    return optimal_n_embeds[0]
+
+  # else, return the whole list
   return optimal_n_embeds
