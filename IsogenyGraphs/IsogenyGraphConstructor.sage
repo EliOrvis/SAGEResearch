@@ -290,3 +290,35 @@ def color_spine(G, vertex_labels = True):
     Fp_verts = [vert for vert in G.vertices() if vert^p == vert]
 
     return G.graphplot(vertex_colors = {'#868686' : Fp_verts}, vertex_labels = vertex_labels)
+
+### Function to return the loops in the isogeny graph, as acutal isogenies
+##  Inputs: G - Isogeny graph
+##  Outputs: loops - list of isogenies that represent loops in the graph
+def get_isogeny_loops(G):
+    # For each vertex, find all isogenies, then return only the ones where the j-invariant of the image is the same as the domain
+    # Note that this requires code from my EllipticCurveFunctions file
+
+    verts = G.vertices()
+    loops = []
+    p = G.prime()
+    for vert in verts:
+        E = EllipticCurve_from_j(GF(p^2)(vert))
+        isos = isogenies_of_degree_n(E, G.isogeny_degree())
+        for iso in isos:
+            if iso.codomain().j_invariant() == iso.domain().j_invariant():
+                loops.append(iso)
+
+    return loops
+
+### Function to return only the self-dual loops. Note that this currently has a small chance of crashing out because
+### of a sage bug. We're working on it.
+### NOTE: This requires more code from my EllipticCurveFunctions file.
+##  Inputs: G - Isogeny graph
+##  Otuputs: sd_loops - list of self_dual loops
+def get_self_dual_isogeny_loops(G):
+
+    # First get all loops
+    loops = get_isogeny_loops(G)
+
+    # Return the self-dual ones
+    return [loop for loop in loops if is_self_dual_ss(loop)]

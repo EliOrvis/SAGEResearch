@@ -36,6 +36,7 @@ def j_from_order(O):
         assert pos_js[0]^p == pos_js[0]
         done = True
 
+
       elif len(pos_js) == 2:
         # If either is in Fp then we should continue, otherwise verify that we found conjugates and move on
         if pos_js[0]^p != pos_js[0] and pos_js[1]^p != pos_js[1]:        

@@ -177,7 +177,7 @@ def quaternion_elements_by_minpoly(O, norm, trace = None):
   norm_form = O.quadratic_form()
 
   # Get trace 0 norm form - this will speed things up *dramatically* when trace is 0
-  t0_norm_form = trace_0_norm_form(O)[0]
+  t0_norm_form, trace_0_basis = trace_0_norm_form(O)
 
   # Get all elements of norm equal to norm
   # This returns the vector coefficients for the standard basis
@@ -185,8 +185,7 @@ def quaternion_elements_by_minpoly(O, norm, trace = None):
   # If trace is 0, then we use <trace_0_norm_form>
   if trace == 0:
     ele_vectors = t0_norm_form.representation_vector_list(norm + 1)[norm]
-    basis = O.basis()
-    eles = [sum([a*b for (a,b) in zip(tup,basis)]) for tup in ele_vectors]
+    eles = [sum([a*b for (a,b) in zip(tup,trace_0_basis)]) for tup in ele_vectors]
     return eles
 
   else:
@@ -350,11 +349,11 @@ def quaternion_order_embedded_discs(O, ubound, lbound = 3):
   # Return the norm form
   return embedded_discs
 
-  #### This function is a very naive approach to finding the number of optimal embeddings of a discriminant with prime-power 
-  ####  conductor in a quaternion order of Bpinfinity
-  ##   Inputs - O, a quaternion order; d - a fundamental discriminant; ell - a prime; n - non-negative integer;
-  ##            optimal - optional parameter set by default to <True>, will count optimal embeddings if true
-  ##   Outputs - number of optimal embeddings of <(ell^2)^i d> in <O> for each i up to n 
+#### This function is a very naive approach to finding the number of optimal embeddings of a discriminant with prime-power 
+####  conductor in a quaternion order of Bpinfinity
+##   Inputs - O, a quaternion order; d - a fundamental discriminant; ell - a prime; n - non-negative integer;
+##            optimal - optional parameter set by default to <True>, will count optimal embeddings if true
+##   Outputs - number of optimal embeddings of <(ell^2)^i d> in <O> for each i up to n 
 
 def naive_embedding_count(O, d, ell = 1, n = 0, optimal = True):
   # Make sure we are in Bpinfinit
@@ -381,3 +380,16 @@ def naive_embedding_count(O, d, ell = 1, n = 0, optimal = True):
 
   # else, return the whole list
   return optimal_n_embeds
+
+#### This function returns the number of square roots of <-ell> in maximal orders of B_{p, \infty},
+#### up to automorphisms. This is done via an embedding count.
+##   Inputs - p - a prime other than ell; ell - a prime other than p
+##   Outputs - number of square roots of <-ell>
+#    NOTE: This requires functions from my arithmetic_functions.sage file
+def sqrt_ell_count(p, ell):
+  # Use results from Chapter 30 in Voight to count the number of embeddings of sqrt(-ell), and
+  # (1 + sqrt(-ell))/2 if necessary.
+  if ell % 4 == 3:
+    return imaginary_quadratic_order_class_number(-4*ell)*(1 - legendre_symbol(-ell,p)) + imaginary_quadratic_order_class_number(-ell)*(1 - legendre_symbol(-ell,p))
+  else:
+    return imaginary_quadratic_order_class_number(-4*ell)*(1 - legendre_symbol(-ell, p))
