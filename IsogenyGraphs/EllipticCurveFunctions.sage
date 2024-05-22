@@ -75,9 +75,9 @@ def endomorphisms_of_degree_n(E, n):
 
 
 ### Function to obtain all cyclic isogenies of degree n (up to post-composition by an automorphism) out of an elliptic curve
-##  Inputs: E - Elliptic Curve; n - an integer 
+##  Inputs: E - Elliptic Curve; n - an integer; model_set - a set of models in which there exists a model of all the codomains 
 ##  Outputs: isos - a list of all cyclic isogenies out of E of degree n 
-def isogenies_of_degree_n(E, n):
+def isogenies_of_degree_n(E, n, model_set = None):
 
   # Get the base field of the elliptic curve
   F = E.base_field()
@@ -88,6 +88,10 @@ def isogenies_of_degree_n(E, n):
 
   # Extend E to be defined over K
   E2 = E.base_extend(K)
+
+  # If we have explicit models, we need to change the field of definition for the models
+  if model_set != None:
+    model_set = [E.base_extend(K) for E in model_set]
       
   ## Step two is to compute all of the cyclic subgroups of order n in E
   #  This is done by finding a basis for the n-torsion, and then using standard methods
@@ -98,10 +102,26 @@ def isogenies_of_degree_n(E, n):
   ## Step three is to compute all of the isogenies for these subgroups
   #  We try to compute the isogenies to E, if this fails, we simply move on
   isos = []
-  for p in n_points:
-    iso = E2.isogeny(p)
+  for point in n_points:
+    # if the user supplies a set of models to consider, create isogenies into those models
+    if model_set:
+      found = False
+      for model in model_set:
+        try:
+          iso = E2.isogeny(point, codomain = model)
+          found = True
+        except:
+          if found == True:
+            continue
+          else:
+            iso = None
+      # After the loop, assert that at least one model worked. Otherwise, we got a bad model set
+      assert(iso != None)
+    # If no model set is supplied, just make the isogeny to wherever
+    else:
+      iso = E2.isogeny(point)
     if iso not in isos:
-      isos.append(E2.isogeny(p))
+      isos.append(iso)
 
   # return the result
   return isos

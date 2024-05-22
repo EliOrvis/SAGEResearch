@@ -310,6 +310,25 @@ def get_isogeny_loops(G):
 
     return loops
 
+### Function to return a complete set of representatives for the isogenies in the SS ell-isogeny graph, as actual isogenies
+##  Inputs: G - Isogeny graph
+##  Outputs: isogenies - list of isogenies that represent all edges in the graph
+def get_isogenies(G):
+    # For each vertex, find all isogenies
+    # Note that this requires code from my EllipticCurveFunctions file
+
+    verts = G.vertices()
+    isogenies = []
+    p = G.prime()
+    # Get models for all curves in the isogeny graph
+    models = [EllipticCurve_from_j(GF(p^2)(vert)).base_extend(GF(p^(12))) for vert in verts] 
+    print(models)
+    for E in models:
+        isos = isogenies_of_degree_n(E, G.isogeny_degree(), model_set = models)
+        isogenies.append(isos)
+
+    return flatten(isogenies)    
+
 ### Function to return only the self-dual loops. Note that this currently has a small chance of crashing out because
 ### of a sage bug. We're working on it.
 ### NOTE: This requires more code from my EllipticCurveFunctions file.
