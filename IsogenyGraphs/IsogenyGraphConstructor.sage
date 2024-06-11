@@ -313,6 +313,7 @@ def get_isogeny_loops(G):
 ### Function to return a complete set of representatives for the isogenies in the SS ell-isogeny graph, as actual isogenies
 ##  Inputs: G - Isogeny graph
 ##  Outputs: isogenies - list of isogenies that represent all edges in the graph
+##  NOTE: This requires the function <isogenies_of_degree_n> from my EllipticCurveFunctions.sage file
 def get_isogenies(G):
     # For each vertex, find all isogenies
     # Note that this requires code from my EllipticCurveFunctions file
@@ -322,7 +323,6 @@ def get_isogenies(G):
     p = G.prime()
     # Get models for all curves in the isogeny graph
     models = [EllipticCurve_from_j(GF(p^2)(vert)).base_extend(GF(p^(12))) for vert in verts] 
-    print(models)
     for E in models:
         isos = isogenies_of_degree_n(E, G.isogeny_degree(), model_set = models)
         isogenies.append(isos)
@@ -341,3 +341,15 @@ def get_self_dual_isogeny_loops(G):
 
     # Return the self-dual ones
     return [loop for loop in loops if is_self_dual_ss(loop)]
+
+### Function to return the matrix of the action of duals on the isogenies in G
+##  Inputs: G - Isogeny graph
+##  Outputs: M - matrix of the actional of taking duals on the isogeny graph
+def get_dual_matrix(G):
+    # Get all isogenies in G
+    isos = get_isogenies(G)
+
+    # Make matrix
+    M = Matrix(ZZ, len(isos), lambda i,j : 1 if any([isos[i].dual() == isos[j].post_compose(aut) for aut in isos[j].codomain().automorphisms()]) else 0)
+
+    return M

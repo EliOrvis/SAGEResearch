@@ -1,6 +1,7 @@
 #### This file contains functions that are useful for explicitly working with the quaternion algebra B_{p,infinity}.
 import itertools
 import pdb
+from sage.matrix.matrix_integer_dense_hnf import hnf
 
 ### This function is from the paper Deuring For the People, by Jonathan, Jana, Lorenz, and someone else. Not my code.
 ##  Input - a quaternionic order in Bpinf for some prime p
@@ -107,18 +108,17 @@ def quaternion_basis_rep(ele, basis):
   # (e.g. pass QA(1) rather than 1 to write 1 in terms of a given basis).
   QA = ele.parent()
 
-  # If the user provides a basis, use that. Otherwise, use O.basis().
   # This gives a list of vectors whose entries are the coefficients of 
   # each v in terms of the standard basis 1, i, j, k.
-  B = [vector(QA(v)) for v in basis]
+  base = [vector(QA(v)) for v in basis]
 
   # Check that the basis is actually linearly independent over Q
-  if matrix(QQ, B).determinant() == 0:
+  if matrix(QQ, base).determinant() == 0:
     raise ValueError("%s is not a linearly independent set"%(basis))
 
   # Construct Q-vector space of rank 4 on basis B
   V = QQ**4
-  W = V.submodule_with_basis(B)
+  W = V.submodule_with_basis(base)
 
   # Return coefficient tuple of ele in W
   return W.coordinate_vector(ele.coefficient_tuple())
@@ -393,3 +393,132 @@ def sqrt_ell_count(p, ell):
     return imaginary_quadratic_order_class_number(-4*ell)*(1 - legendre_symbol(-ell,p)) + imaginary_quadratic_order_class_number(-ell)*(1 - legendre_symbol(-ell,p))
   else:
     return imaginary_quadratic_order_class_number(-4*ell)*(1 - legendre_symbol(-ell, p))
+
+#### This function returns a basis for a quaternion order given a spanning set for that order.
+##   Inputs - B: a quaternion algebra, span_set: a list of integral elements in <B> that span some order
+##   Outputs - basis: a basis of the order spanned by the elements of <span_set>
+def quaternion_order_basis_from_spanning_set(B, span_set):
+  # Algorthim is pretty simple - just make the matrix whose columns are the spanning set with
+  # respect to the default basis, then take the hermite normal form, and use the columns of that as
+  # the coefficients of the basis.
+
+  std_basis = B.basis()
+  coeff_list = [quaternion_basis_rep(ele, std_basis) for ele in span_set]
+
+  # Scale matrix to make columns into integers - this is necessary for HNF to work
+  M = Matrix(QQ, coeff_list).transpose()
+  M2 = MatrixSpace(ZZ, 4, len(span_set))(M.denominator()*M)
+
+  # Take the zero entry in the hnf output b/c that is the actual matrix, and scale back, then take appropriate columns
+  H = (1/M.denominator())*pari(M2).mathnf().sage()
+
+  # Use the columns of the HNF to get a basis for the order spanned by <span_set>
+  order_basis = [sum([a*b for (a,b) in zip(col, std_basis)]) for col in H.columns()]
+
+  return order_basis
+
+#### This function finds the intersection number of two optimal embeddings in a quaternion order
+##   Inputs - O: a quaternion order in which <opt1> and <opt2> live;
+##            opt1, opt2: elements of O which generate the quadratic orders we are intersecting (as rings);
+##   Outputs - intersection_num: the intersection number of the embeddings <opt1>, <opt2>
+def intersection_number_embeddings(O, opt1, opt2):
+
+  # Validation
+  assert(opt1 in O and opt2 in O)
+  assert(O.quaternion_algebra().discriminant().is_prime())
+
+  # Store p, B for future use
+  B = O.quaternion_algebra()
+  p = B.discriminant()
+
+  # Initiate counter at 1, and set flag for when to stop
+  intersection_num = 1
+  still_intersecting = True
+  while still_intersecting:
+    # Make quaternion orders corresponding to phi(d1) + p^{n-1}O and same for phi(d2)
+    opt1_O_span_set = flatten([[(p^intersection_num)*ele for ele in O.basis()],[B(1), opt1]]) 
+    opt1_O = B.quaternion_order(quaternion_order_basis_from_spanning_set(B, opt1_O_span_set))
+
+    opt2_O_span_set = flatten([[(p^intersection_num)*ele for ele in O.basis()],[B(1), opt2]])
+    opt2_O = B.quaternion_order(quaternion_order_basis_from_spanning_set(B, opt2_O_span_set))
+
+    # If these are still the same, we add one to the intersection count, which also increments the power of p
+    if opt1_O == opt2_O:
+      intersection_num += 1
+
+    # Otherwise, we end the loop 
+    else:
+      still_intersecting = False
+
+  return intersection_num
+
+#### This function checks whether two pairs of quaternion elements are "simultaneously conjugate"
+##   Inputs - O: quaternion order; pair1, pair2 - pairs of elements in O with the same min polys
+##   Outputs - result: Boolean
+def simul_conj(pair1, pair2):
+  # Some validation
+  assert(pair1[0].reduced_norm() == pair2[0].reduced_norm() and pair1[0].reduced_trace() == pair2[0].reduced_trace())
+  assert(pair1[1].reduced_norm() == pair2[1].reduced_norm() and pair1[1].reduced_trace() == pair2[1].reduced_trace())
+
+  # get units of O
+  units = quaternion_elements_by_minpoly(O,1)
+
+  # check for simultaneous conjugacy
+  # NOTE: This is a little extraneous since we check both u and -u, but I'm too lazy to fix that right now
+  for u in units:
+    if pair1[0]*(u*pair2[0]*(1/u)) == (u*pair2[0]*(1/u))*pair1[0] and pair1[1]*(u*pair2[1]*(1/u)) == (u*pair2[1]*(1/u))*pair1[1]:
+      return True
+
+  # If we got through all units and did not return True, then we return False
+  return False
+
+#### This function intersection numbers for two discriminants in a quaternion order
+##   Inputs - O: quaternion order; d1, d2 - embedded discriminants
+##   Outputs - intersection_nums: list of intersection numbers for all pairs of embeddings
+##             with the given discriminants, up to simultaneous conjugation.
+def intersection_number_discriminants(O, d1, d2):
+  # Get generators for the quadratic orders with discriminants d1, d2 in O
+  pos_d1 = quaternion_elements_by_minpoly(O, (ZZ(d1 % 2) - d1)/4, -ZZ(d1 % 2))
+  pos_d2 = quaternion_elements_by_minpoly(O, (ZZ(d2 % 2) - d2)/4, -ZZ(d2 % 2))
+
+  # Make all pairs of generators
+  gen_pairs = [[ele1, ele2] for ele1 in pos_d1 for ele2 in pos_d2]
+
+  # Create equivalence relation function for simultaneous conjugation
+  eq_classes = equal_classes(gen_pairs, simul_conj)
+
+  # Get equivalence reps
+  eq_reps = [cl[0] for cl in eq_classes]
+
+  intersection_nums = []
+  for pair in eq_reps:
+    intersection_nums.append(intersection_number_embeddings(O, pair[0], pair[1]))
+
+  return intersection_nums 
+
+
+#### This function returns all suborders of index n in a given quaternion order
+##   Inputs - O: quaternion order; n - positive integer
+##   Outputs - suborders: list of suborders of index <n>
+#    NOTE: This requires a function from my <arithmetic_functions.sage> file
+def suborders_by_index(O, n):
+  # Get the parent of O, and a basis
+  QA = O.quaternion_algebra()
+  O_basis = O.basis()
+
+  # Every suborder is, in particular, a sublattice. So we find all of those with the right index
+  sublattices = sublattices_by_index(n, len(O_basis))
+
+  # For each sublattice, we check whether the columns give a suborder of <O>. If so, we keep it, otherwise, we move on
+  suborders = []
+  for M in sublattices:
+    try: 
+      quat_eles = [sum([coeff*basis_ele for (coeff, basis_ele) in zip(col, O_basis)]) for col in M.columns()]
+      suborders.append(QA.quaternion_order(quat_eles))
+    except:
+      continue
+
+
+  return suborders
+
+

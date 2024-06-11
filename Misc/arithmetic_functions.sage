@@ -1,4 +1,6 @@
 #### This file contains miscellaneous arithmetic functions that are helpful for working with any code base.
+import itertools
+
 
 # Function to give a random prime in a particular range with a particular modulo condition. Code from David Lowry-Duda
 
@@ -79,7 +81,7 @@ def genus_number_of_d(d):
   return 2^(mu - 1)
 
 # This function returns the class number of an imaginary quadratic order from the discriminant
-# Note that the order need not be maximal, which is why this is more general than QuadraticField(d).class_number()
+# Note that the order need not bex` maximal, which is why this is more general than QuadraticField(d).class_number()
 
 def imaginary_quadratic_order_class_number(d):
   # Create the order of discriminant d
@@ -219,3 +221,75 @@ def binary_qf_genera(d):
       genera_sets.append(qf_coset_set)
 
   return genera
+
+
+#### This function creates equivalence classes from a list of elements and a relation
+##   Inputs: lst - a list of elements; R - a binary function that returns true or false on
+##            two elements of <lst>
+##`  Outputs: equal_classes - a list of lists that represent all equivalence classes under `R`
+##   NOTE: There is little validation that `R` is an equivalence relation. Be careful.
+def equal_classes(lst, R):
+  # Storage for our equivalence classes 
+  equal_class_list = []
+
+  # Go over each item, and put it in the appropriate class
+  for item in lst:
+    # Get the existing equivalence class containing item, if it exists
+    existing_class = [sub_lst for sub_lst in equal_class_list if any([R(item, b) for b in sub_lst])]
+    # If there is such a class, validate that there is only one, and add item
+    if len(existing_class) > 0:
+      assert(len(existing_class) == 1)
+      existing_class[0].append(item)
+    # Otherwise, make a new class with item in it
+    else:
+      equal_class_list.append([item])
+
+  return equal_class_list
+
+
+#### This function finds matrix representative of the sublattices of index n for a generic lattice of dimension d
+##   Inputs - d, n: positive integers
+##   Outputs - sublattices: matrix representatives of all sublattice of index n in a generic lattice of dimension d
+#    NOTES: <n> is currently restricted to a prime power
+#           This is based on the theory described here: https://journals.iucr.org/a/issues/1997/06/00/au0106/au0106.pdf
+def sublattices_by_index(n, d):
+  # Validate that n is a prime power
+  assert(n.is_prime_power())
+
+  ### Enumerate all possible diagonals
+  diagonals = []
+
+  # Get valuation and prime of n
+  prime, valuation = n.factor()[0]
+
+
+  # Get partitions of the valuation with length at most d
+  val_parts = Partitions(valuation, max_length = d).list()
+
+  # For each partition, if the length is less than d, pad with zeros and add all permutations to diagonals
+  for part in val_parts:
+    if len(part) < d:
+      part = part + [0]*(d - len(part))
+    diagonals = diagonals + list(itertools.permutations(part))
+
+  # Get only unique values
+  diagonals = list(set(diagonals))
+
+  # Alter diagonals to have the correct power of <prime>
+  diagonals = [[prime^i for i in ele] for ele in diagonals]
+
+  ### Construct sets of all possible rows
+  sublattices = []
+  for diag in diagonals:
+    pos_rows = []
+    for i in [0..d-1]:
+      # Create a list of possible values for each entry in the row
+      entry_limits = [[0] for j in [0..i-1]] + [[diag[i]]] + [[0..entry - 1] for entry in diag[i+1:]]
+      # The possibilities for row i for this diagonal are the product of all the entry limits
+      pos_rows.append(list(itertools.product(*entry_limits)))
+
+    # Add all matrices made from one choice of each possible row to the sublattices
+    sublattices = sublattices + list(itertools.product(*pos_rows))
+
+  return [Matrix(sl) for sl in sublattices]
+

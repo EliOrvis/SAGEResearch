@@ -32,6 +32,56 @@ def find_CM_lifts(G, v, d):
 					lifts.append((j, hom))
 	return lifts
 
+### Find the valuation of the difference of j-invariants at the primes of the composite of two hilbert class fields lying over a given rational prime 
+##	Inputs: d1, d2 - imaginary quadratic discriminants; p - a prime dividing the norm of the difference of j-invariants of d1, d2
+##	Ouputs: valuation_list - list of lists, each element is the list of valuations for each pairwise difference (ordered) at a given prime over p
+#	NOTE: Currently only implemented for d1 != d2
+def HCFcomposite_valuation_differences(d1, d2, p):
+
+	Q1.<sqrtd1> = QuadraticField(d1); Q2.<sqrtd2> = QuadraticField(d2)
+	HCP1 = Q1.hilbert_class_polynomial()
+	HCP2 = Q2.hilbert_class_polynomial()
+	H1.<j1> = Q1.extension(HCP1)
+
+	H1opt, from_H1opt, to_H1opt = H1.absolute_field(names = 'H1optgen').optimized_representation()
+
+	# Factor HCP2 over H1opt so that we adjoin the root of an irreducible polynomial
+	HCP2factor = HCP2.change_ring(H1opt).factor()[0][0]
+
+	H1j2.<j2> = H1opt.extension(HCP2factor) 
+
+	H1j2opt, from_H1j2opt, to_H1j2opt = H1j2.absolute_field(names = 'H1j2optgen').optimized_representation()
+
+	# Factor x^2 - d2, in case sqrtd2 is already in H1j2opt
+	R.<x> = ZZ[]
+	f = x^2 - d2
+	sqrtd2factor = f.change_ring(H1j2opt).factor()[0][0]
+
+	H1H2.<sqrtd2> = H1j2opt.extension(sqrtd2factor)
+
+	H1H2opt, from_H1H2opt, to_H1H2opt = H1H2.absolute_field(names = 'H1H2optgen').optimized_representation()
+
+	# Find a j-invariant for each HCF in the new (optimized) composite field
+	j01 = HCP1.change_ring(H1H2opt).any_root()
+	j02 = HCP2.change_ring(H1H2opt).any_root()
+
+	# Get primes of the HCF composite above p
+	primes = H1H2opt.primes_above(p)
+
+	# Get differences of j-invariants:
+	j_invar_diffs = []
+	for x in j01.galois_conjugates(H1H2opt):
+		for y in j02.galois_conjugates(H1H2opt):
+			j_invar_diffs.append(x - y)
+
+	# Make valuation lists
+	valuation_list = []
+	for p in primes:
+		valuation_list.append([diff.valuation(p) for diff in j_invar_diffs])
+
+
+	return valuation_list 
+
 ### Find the number of primes dividing phi_ell^n(j_1, j_2), where j_2 ranges over all j-invariants in a given valley
 ## Inputs: G - isogeny graph object; d1, d2 - embedded fundamental discriminants; length - path-length to consider (i.e., ell^n = ell^length)
 ##           random_j1 - whether to randomly choose a j1 from H1 to be the fixed input to the modular polynomial

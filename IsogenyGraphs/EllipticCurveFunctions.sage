@@ -37,7 +37,7 @@ def isogeny_division_by_m(phi, m):
   return(P,Q)
 
 
-### Function to obtain all cyclic endomorphisms of degree n (up to post-composition by an automorphism) of an elliptic curve
+### Function to obtain all cyclic endomorphisms of degree n (up to post-composition by an automorphism) of an elliptic curve over a finite field.
 ##  Inputs: E - Elliptic Curve; n - an integer 
 ##  Outputs: isos - a list of all endomorphisms of E of degree n 
 def endomorphisms_of_degree_n(E, n):
@@ -50,19 +50,34 @@ def endomorphisms_of_degree_n(E, n):
   div_poly = E.division_polynomial(n)
   K.<a> = div_poly.splitting_field()
 
-  # Extend E to be defined over K
-  E2 = E.base_extend(K)
-      
+  # Extend E to be defined over a quadratic extension of K
+  # NOTE: This is where we use that the field is finite, since in this case all quadratic extensions are the same.
+  #       The quadratic extension is necessary in the first place to obtain the y-values.
+  E2 = E.base_extend(K.extension(2))
+    
   ## Step two is to compute all of the cyclic subgroups of order n in E
   #  This is done by finding a basis for the n-torsion, and then using standard methods
   
-  # FIX THIS LATER
+  # Find the points of order <n>
   n_points = [p for p in E2(0).division_points(n) if p.order() == n]
+
+  # Find the number of subgroups of order <n>
+  n_subgroups = len([(a,b) for a in [0..n-1] for b in [0..n-1] if gcd(n,gcd(a,b)) == 1])/euler_phi(n)
+
+  # Find generators for the subgroups of order <n> by adding points to the list until we have enough
+  subgroup_gens = []
+  total_subgroup_elements = []
+  i = 0
+  while len(subgroup_gens) < n_subgroups:
+    if n_points[i] not in flatten(total_subgroup_elements):
+      subgroup_gens.append(n_points[i])
+      total_subgroup_elements.append([k*n_points[i] for k in [0..n-1]])
+    i += 1
 
   ## Step three is to compute all of the isogenies for these subgroups
   #  We try to compute the isogenies to E, if this fails, we simply move on
   isos = []
-  for p in n_points:
+  for p in subgroup_gens:
     try:
       iso = E2.isogeny(p, codomain = E2)
       if iso not in isos:
