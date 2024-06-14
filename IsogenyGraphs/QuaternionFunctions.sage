@@ -162,6 +162,19 @@ def quaternion_norm_form(B):
   # Return the norm form
   return DiagonalQuadraticForm(B.vector_space().base_field(), [1, -a, -b, a*b])
 
+#### This function gives the quadratic form that describes the discriminants of all elements in O
+##   Inputs - O, a quaternion order;
+##   Outputs - Quadratic Form that is the discriminant of an element in <O> wrt to <O.basis()>
+def quaternion_discriminant_form(O):
+  basis = O.basis()
+  R.<x,y,z,w> = ZZ[]
+
+  nrd_poly = O.quadratic_form().polynomial()
+
+  disc_poly = (ZZ(basis[0].reduced_trace())*x + ZZ(basis[1].reduced_trace())*y + ZZ(basis[2].reduced_trace())*z + ZZ(basis[3].reduced_trace())*w)^2 - 4*R(nrd_poly)
+
+  return QuadraticForm(disc_poly)
+
 #### This function returns all elements of given norm (and trace, optional) from an order 
 #### in a definite quaternion algebra over Q
 ##   Inputs - O, an order in a definite quaternion algebra; norm, integer to be the reduced norm
@@ -513,12 +526,48 @@ def suborders_by_index(O, n):
   suborders = []
   for M in sublattices:
     try: 
-      quat_eles = [sum([coeff*basis_ele for (coeff, basis_ele) in zip(col, O_basis)]) for col in M.columns()]
+      quat_eles = [sum([coeff*basis_ele for (coeff, basis_ele) in zip(row, O_basis)]) for row in M.rows()]
       suborders.append(QA.quaternion_order(quat_eles))
     except:
       continue
 
-
   return suborders
 
+#### This function checks whether a given order, with level coprime to p in Bpoo is Eichler
+##   Inputs - O: quaternion order
+##   Outputs - is_Eichler: boolean
+def is_Eichler(O):
+  # Some validation
+  p = O.quaternion_algebra().discriminant()
+  assert(p.is_prime())
 
+  level = ZZ(O.discriminant() / p)
+  assert(gcd(p, level) == 1)
+
+  # if O is maximal, return true
+  if O.is_maximal():
+    return True
+
+  # Otherwise, we need to check that O is residually split at every prime dividing the level. See Voight, 24.3
+  else:
+    D = quaternion_discriminant_form(O)
+    for ell in level.prime_factors():
+      Dpoly = D.change_ring(Zmod(ell)).polynomial()
+      val_list = list(set([Dpoly(a,b,c,d) for a in Zmod(ell) for b in Zmod(ell) for c in Zmod(ell) for d in Zmod(ell)]))
+      # See page 400 of Voight - we are residually split if and only if the discriminant form represents exactly 0, 1 mod ell
+      if val_list != [0,1]:
+        return False
+
+  # If we have not found a non-residually split prime, then we can return True
+  return True
+
+#### This function returns all Eichler orders of a given level within a maximal order
+##   Inputs - O, maximal order; level - positive integer coprime to the discriminant of <O>
+##   Outputs - Eichler_orders, list of all Eichler orders of level <level> in <O>
+def get_Eichler_orders_by_level(O, level):
+  # Validation
+  assert(O.is_maximal())
+  assert(gcd(O.discriminant(), level) == 1)
+
+  # Return all index <level> suborders that are Eichler
+  return [O for O in suborders_by_index(O, level) if is_Eichler(O)]

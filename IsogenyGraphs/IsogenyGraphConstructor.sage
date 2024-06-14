@@ -18,12 +18,12 @@ except:
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree, undirected = False):
         if undirected == True:
-            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, undirected = True)
+            self._graph = build_undirected_isogeny_graph_over_Fpbar(prime, isogeny_degree)
         else:
             self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, undirected = False)
 
         # Relabel multiple edges to distinguish in path-length functions
-        relabel_multiedges(self._graph)
+        #frelabel_multiedges(self._graph)
         self._prime = prime
         self._isogeny_degree = isogeny_degree
     def __getattr__(self, attr):
@@ -150,6 +150,58 @@ def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
             if count == steps:
                 break
         return G
+
+### This function builds the undirected isogeny graph for a given prime and isogeny degree
+##  Inputs: p - a prime number; ell - a prime number other than <p>
+##  Outputs: G - an undirected graph object with edges labelled by a representative for the isogeny class of that edge
+#   NOTE: This is MUCH slower than the directed version, since in this version we compute all the isogenies. Use with caution.
+def build_undirected_isogeny_graph_over_Fpbar(p, ell):
+    # Note: This is attrocious, but it works. We compute the undirected graph, then get the isogenies, then figure out the equivalences
+    #       I will fix this all someday, but right now it is left as is so that I have time to write a dissertation...
+    und_graph = IsogenyGraph(p, ell)
+    isogenies = get_isogenies(und_graph)
+    print(len(isogenies))
+
+    # The isogenies are already up to post-composition by an automorphism, so we only need to identify by pre-composition, then by duals
+    # These functions are used for the identifications
+    def id_by_precomp(phi1, phi2):
+        auts = phi1.domain().automorphisms()
+
+        # If phi1 is equal to phi2 after precomposing by an automorphism, return true, otherwise, return false
+        if any([phi1.pre_compose(aut) == phi2 for aut in auts]):
+            return True
+        else:
+            return False
+
+    # THIS IS WHERE THE PROBLEM IS. IDENTIFYING UP TO DUALS IS NOT WORKING CORRECTLY SOMEHOW
+    def id_by_dual(iso_class1, iso_class2):
+        if any([phi.dual() in iso_class2 for phi in iso_class1]):
+            return True
+        else:
+            return False
+
+    # 
+    edge_preaut_eq_classes = []
+    for j1 in und_graph.vertices():
+        for j2 in und_graph.vertices():
+            j1j2_isos = [iso for iso in isogenies if iso.domain().j_invariant() == j1 and iso.codomain().j_invariant() == j2]
+            # Put these into equivalence classes
+            edge_preaut_eq_classes = edge_preaut_eq_classes + equal_classes(j1j2_isos, id_by_precomp)
+
+
+    print(len(edge_preaut_eq_classes))
+    # Now identify all the classes by duals - i.e. if two classes contain isogenies that are dual to one another, they are now considered the same
+    dual_idd_edges = equal_classes(edge_preaut_eq_classes, id_by_dual)
+    print(len(dual_idd_edges))
+
+    # Now make the labelled edge set for the undirected graph
+    edges = {}
+
+    for j1 in und_graph.vertices():
+        edges[j1] = {j2 : [edge_class[0][0] for edge_class in dual_idd_edges if edge_class[0][0].domain().j_invariant() == j1 and edge_class[0][0].codomain().j_invariant() == j2] for j2 in und_graph.vertices()}
+
+    Gu = Graph(edges)
+    return Gu
 
 ### Function to return the number of vertices in the SS isogeny graph over F_p-bar. Does the obvious thing from Silverman.
 ##  Inputs: p - prime number
