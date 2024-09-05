@@ -18,9 +18,9 @@ except:
 class IsogenyGraph():
     def __init__(self, prime, isogeny_degree, undirected = False):
         if undirected == True:
-            self._graph = build_undirected_isogeny_graph_over_Fpbar(prime, isogeny_degree)
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, True)
         else:
-            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, undirected = False)
+            self._graph = build_isogeny_graph_over_Fpbar(prime, isogeny_degree, False)
 
         # Relabel multiple edges to distinguish in path-length functions
         #frelabel_multiedges(self._graph)
@@ -48,7 +48,7 @@ class IsogenyGraph():
     def embedded_fundamental_discriminants(self, ubound, lbound = 1):
         if lbound > ubound:
             raise ValueError("Lower bound is larger than upper bound")
-        return [-d for d in [lbound..ubound] if is_fundamental_discriminant(-d) and (GF(self.prime())(-d).is_square() == False or d % self.prime() == 0)]
+        return [-d for d in [lbound..ubound] if (-d).is_fundamental_discriminant() and (GF(self.prime())(-d).is_square() == False or d % self.prime() == 0)]
  
     # Method to return a random maximal discriminant such that the elliptic curves with CM by
     # the associated maximal order are supersingular mod p. ubound and lbound are upper and lower bounds on discriminant returned. 
@@ -77,9 +77,9 @@ class IsogenyGraph():
 ####     Also, major modification to use James' code if possible, which saves substantial time on large primes.
 
 
-def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
+def build_isogeny_graph_over_Fpbar(p, l, undirected, steps=oo):
     # First, create the graph with James' code if possible, otherwise, we use the slower SAGE implementation
-    if load_success == True:
+    if load_success == True and undirected == False:
         return ssl_graph(p, l)
     """
     Given a prime p, this function returns
@@ -121,11 +121,11 @@ def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
         """
         R.<x> = GF(p^2)[]
         return flatten([[j2]*k for j2,k in phi(j,x).roots()])
-    G = DiGraph(multiedges=True,loops=True)
-    visited = set()
-    not_visited = set([j0])
-    count = 0
     if undirected == True:
+        G = Graph(multiedges=True,loops=True)
+        visited = set()
+        not_visited = set([j0])
+        count = 0
         while not_visited:
             j1 = not_visited.pop()
             visited.add(j1)
@@ -139,6 +139,10 @@ def build_isogeny_graph_over_Fpbar(p, l, undirected = False, steps=oo):
                 break
         return G.to_undirected()
     else:
+        G = DiGraph(multiedges=True,loops=True)
+        visited = set()
+        not_visited = set([j0])
+        count = 0
         while not_visited:
             j1 = not_visited.pop()
             visited.add(j1)
@@ -385,7 +389,7 @@ def get_isogenies(G):
 ### of a sage bug. We're working on it.
 ### NOTE: This requires more code from my EllipticCurveFunctions file.
 ##  Inputs: G - Isogeny graph
-##  Otuputs: sd_loops - list of self_dual loops
+##  Otuputs: sd_loops - list of loops
 def get_self_dual_isogeny_loops(G):
 
     # First get all loops

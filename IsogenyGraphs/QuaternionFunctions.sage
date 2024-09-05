@@ -167,11 +167,11 @@ def quaternion_norm_form(B):
 ##   Outputs - Quadratic Form that is the discriminant of an element in <O> wrt to <O.basis()>
 def quaternion_discriminant_form(O):
   basis = O.basis()
-  R.<x,y,z,w> = ZZ[]
+  R.<x,y,z,w> = QQ[]
 
   nrd_poly = O.quadratic_form().polynomial()
 
-  disc_poly = (ZZ(basis[0].reduced_trace())*x + ZZ(basis[1].reduced_trace())*y + ZZ(basis[2].reduced_trace())*z + ZZ(basis[3].reduced_trace())*w)^2 - 4*R(nrd_poly)
+  disc_poly = (basis[0].reduced_trace()*x + basis[1].reduced_trace()*y + basis[2].reduced_trace()*z + basis[3].reduced_trace()*w)^2 - 4*R(nrd_poly)
 
   return QuadraticForm(disc_poly)
 
@@ -189,14 +189,13 @@ def quaternion_elements_by_minpoly(O, norm, trace = None):
   # Get quaternion norm form
   norm_form = O.quadratic_form()
 
-  # Get trace 0 norm form - this will speed things up *dramatically* when trace is 0
-  t0_norm_form, trace_0_basis = trace_0_norm_form(O)
-
   # Get all elements of norm equal to norm
   # This returns the vector coefficients for the standard basis
 
   # If trace is 0, then we use <trace_0_norm_form>
   if trace == 0:
+    # Get trace 0 norm form - this will speed things up *dramatically* when trace is 0
+    t0_norm_form, trace_0_basis = trace_0_norm_form(O)
     ele_vectors = t0_norm_form.representation_vector_list(norm + 1)[norm]
     eles = [sum([a*b for (a,b) in zip(tup,trace_0_basis)]) for tup in ele_vectors]
     return eles
@@ -552,8 +551,8 @@ def is_Eichler(O):
   else:
     D = quaternion_discriminant_form(O)
     for ell in level.prime_factors():
-      Dpoly = D.change_ring(Zmod(ell)).polynomial()
-      val_list = list(set([Dpoly(a,b,c,d) for a in Zmod(ell) for b in Zmod(ell) for c in Zmod(ell) for d in Zmod(ell)]))
+      Dpoly = D.polynomial()
+      val_list = list(set([Dpoly(a,b,c,d) % ell for a in [0..ell-1] for b in [0..ell-1] for c in [0..ell-1] for d in [0..ell-1]]))
       # See page 400 of Voight - we are residually split if and only if the discriminant form represents exactly 0, 1 mod ell
       if val_list != [0,1]:
         return False

@@ -49,6 +49,7 @@ def create_cycle_data(prime_range, isogeny_range, cycle_length, outfile_name, on
             # NOTE: This is non-optimized, Sage has this function to return all simple cycles up to some length
             #       but not exactly some length.
             #       Also, this counts direction of traversal as well. This doesn't affect the ratio but is good to keep in mind.
+            #       ALSO - THIS DOES NOT COUNT THE SAME CYCLES AS IN THE PAPER, SINCE THIS INCLUDES BACKTRACKING. DO NOT USE FOR COMPUTATIONS IN THE PAPER.
             cycles = [c for c in G.all_simple_cycles(max_length = cycle_length + 1) if len(c) == cycle_length + 1]
 
             # Find cycles intersecting the spine
@@ -155,6 +156,7 @@ def get_discriminants_by_ell_order(ell, order):
 ## This function returns all imaginary quadratic discriminants where <ell> splits and has order <order>, but does so in a more elementary way than the previous 
 ## For explanations for why this works, see Orientations and Cycles Theorem 7.4
   #  Inputs: ell - prime; order - positive integer; all_divisors - boolean, returns orders where the order of <ell> divides <order> if True
+  #          p - Optional: second prime to restrict to only discriminants that give cycles in the isogeny graph modulo p
   #  Outputs: discs - list of tuples of the form (d, N), where d is an imaginary quadratic discriminant
   #                   (not necessarily fundamental) such that 
   #                   (1) <ell> does not divide the conductor of O_d
@@ -162,7 +164,7 @@ def get_discriminants_by_ell_order(ell, order):
   #                   (3) <ell> splits in O_d,
   #                   and N is the class number of O_d
 
-def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False):
+def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False, p = None):
 
   # Return the list of numbers x^2 - 4*<ell>^(<order>), for x between 0 and <floor(2*<ell>^(<order>/2)), x not 0 mod <ell>
   # By the results in the paper cited above, this is all the orders where <ell> splits and has order dividing <order>
@@ -191,7 +193,15 @@ def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False):
   # Return discriminants & class numbers for those remaining
   # <imaginary_quadratic_order_class_number> is a function in my arthimetic_functions.sage code that gives the class number
   # of an imaginary quadratic order from the discriminant (this works for non-maximal orders) 
-  return [(d,imaginary_quadratic_order_class_number(d)) for d in all_ds if d not in ds_to_exclude]
+  ds_to_return = [d for d in all_ds if d not in ds_to_exclude]
+
+  # If the optional parameter <p> is passed, remove discriminants where p splits or p divides the conductor
+  if p:
+    ds_to_return_p = [d for d in ds_to_return if legendre_symbol(-d,p) != 1 and p.divides((d / fundamental_discriminant(d))^(1/2)) == False]
+    return [(d, imaginary_quadratic_order_class_number(d)) for d in ds_to_return_p]
+
+
+  return [(d,imaginary_quadratic_order_class_number(d)) for d in ds_to_return]
 
 ## This function takes in a an <ell> value, and a list of cycle lengths, and returns moduli conditions on p that will guarantee no cycles of those lengths
 ## WARNING: THIS TAKES A REALLY LONG TIME. IF YOU JUST WANT TO CHECK WHETHER THERE EXIST SOLUTIONS, SET <check_n> TO BE THE NUMBER OF SOLUTIONS YOU WANT

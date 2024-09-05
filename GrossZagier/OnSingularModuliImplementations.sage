@@ -10,6 +10,19 @@ def GZ_delta(x, d):
 	else:
 		return 1
 
+## This helper function implements the epsilon function of On Singular Moduli
+# Inputs: d1, d2 - discriminants; p - prime
+# Outputs: epsilon(x)
+
+def GZ_epsilon(d1,d2,p):  
+	assert(p.is_prime())
+	if gcd(d1, p) == 1:
+		return legendre_symbol(d1, p)
+	elif gcd(d2, p) == 1:
+		return legendre_symbol(d2, p)
+	else:
+		raise ValueError("%s divides both %s and %s"%(p, d1, d2))
+
 ## This helper function implements the r_I function in Theorem 4.7 of On Singular Moduli
 # Inputs: n - positive integer input to r_I; I - fractional ideal
 # Outpus: r_I(n) - the number of representations of n by an ideal in the class of I

@@ -32,11 +32,12 @@ def find_CM_lifts(G, v, d):
 					lifts.append((j, hom))
 	return lifts
 
-### Find the valuation of the difference of j-invariants at the primes of the composite of two hilbert class fields lying over a given rational prime 
-##	Inputs: d1, d2 - imaginary quadratic discriminants; p - a prime dividing the norm of the difference of j-invariants of d1, d2
+### Find the valuation of the modular polynomial on j-invariants at the primes of the composite of two hilbert class fields lying over a given rational prime 
+##	Inputs: d1, d2 - imaginary quadratic discriminants; p - a prime dividing the norm of the difference of j-invariants of d1, d2;
+##			level - a non-negative integer specifying which modular polynomial to consider (default is 1)
 ##	Ouputs: valuation_list - list of lists, each element is the list of valuations for each pairwise difference (ordered) at a given prime over p
 #	NOTE: Currently only implemented for d1 != d2
-def HCFcomposite_valuation_differences(d1, d2, p):
+def HCFcomposite_valuations(d1, d2, p, level = 1):
 
 	Q1.<sqrtd1> = QuadraticField(d1); Q2.<sqrtd2> = QuadraticField(d2)
 	HCP1 = Q1.hilbert_class_polynomial()
@@ -69,10 +70,12 @@ def HCFcomposite_valuation_differences(d1, d2, p):
 	primes = H1H2opt.primes_above(p)
 
 	# Get differences of j-invariants:
+	mod_poly = mpdb[level]
+
 	j_invar_diffs = []
 	for x in j01.galois_conjugates(H1H2opt):
 		for y in j02.galois_conjugates(H1H2opt):
-			j_invar_diffs.append(x - y)
+			j_invar_diffs.append(mod_poly(x,y))
 
 	# Make valuation lists
 	valuation_list = []
