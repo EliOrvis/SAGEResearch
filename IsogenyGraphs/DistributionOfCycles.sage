@@ -153,6 +153,17 @@ def get_discriminants_by_ell_order(ell, order):
 
   return discs 
 
+# This finds the set Q(N) from the orientations and cycles paper
+def get_Qn(ell, order, p):
+  ubound = floor(2*ell^(order/2))
+  return [(x,x^2 - 4*(ell^order), imaginary_quadratic_order_class_number(x^2 - 4*(ell^order))) for x in [0..ubound] if x % ell != 0 and legendre_symbol(x^2 - 4*(ell^order), p) != 1 and (p^2).divides(x^2 - 4*(ell^order)) == False]
+
+# This computes the value Q_n from the orientations and cycles paper
+def Qn_count(ell, order, p):
+  assert ell^order < p
+  Qns = get_Qn(ell, order, p)
+  return 2*sum([sum([imaginary_quadratic_order_class_number(tup[1]/div) for div in tup[1].divisors() if div.is_square() and tup[1]/div % 4 in [0,1]]) for tup in Qns])
+
 ## This function returns all imaginary quadratic discriminants where <ell> splits and has order <order>, but does so in a more elementary way than the previous 
 ## For explanations for why this works, see Orientations and Cycles Theorem 7.4
   #  Inputs: ell - prime; order - positive integer; all_divisors - boolean, returns orders where the order of <ell> divides <order> if True
@@ -170,6 +181,9 @@ def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False, p = No
   # By the results in the paper cited above, this is all the orders where <ell> splits and has order dividing <order>
   ubound = floor(2*ell^(order/2))
   maximal_ds = [x^2 - 4*(ell^order) for x in [0..ubound] if x % ell != 0] 
+  # If the optional parameter <p> is passed, remove some of these
+  if p:
+    maximal_ds = [d for d in maximal_ds if legendre_symbol(d,p) != 1 and (p^2).divides(d) == False]
   all_ds = flatten([[n/d for d in n.divisors() if d.is_square() and n/d % 4 in [0,1]] for n in maximal_ds])
 
   # If the user wants orders where the order of <ell> merely divides <order>, we are done.
@@ -177,7 +191,7 @@ def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False, p = No
     return [(d,imaginary_quadratic_order_class_number(d)) for d in all_ds]
 
   # Remove all discriminants that appear for divisors of <order>. This is done by applying the same technique as above
-  # to all <order>/p, where p is a prime factor of <order> or is equal to <order>. Since the process above returns all discriminants where <ell>
+  # to all <order>/q, where q is a prime factor of <order> or is equal to <order>. Since the process above returns all discriminants where <ell>
   # has order dividing <order>, if a discriminant appears for any one of these choices, we can remove it.
 
   ds_to_exclude = set([])
@@ -197,7 +211,7 @@ def get_discriminants_by_ell_order_fast(ell, order, all_divisors = False, p = No
 
   # If the optional parameter <p> is passed, remove discriminants where p splits or p divides the conductor
   if p:
-    ds_to_return_p = [d for d in ds_to_return if legendre_symbol(-d,p) != 1 and p.divides((d / fundamental_discriminant(d))^(1/2)) == False]
+    ds_to_return_p = [d for d in ds_to_return if legendre_symbol(d,p) != 1 and p.divides((d / fundamental_discriminant(d))^(1/2)) == False]
     return [(d, imaginary_quadratic_order_class_number(d)) for d in ds_to_return_p]
 
 
