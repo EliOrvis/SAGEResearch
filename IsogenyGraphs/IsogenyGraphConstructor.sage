@@ -280,17 +280,14 @@ def relabel_multiedges(G):
         G.add_edge(e)
 
 
-### ELI: Function to return vertices with endomorphisms by a given maximal order
+### ELI: Function to return vertices with optimal embeddings of endomorphisms by a given order
 
 ## Inputs: G - isogeny graph, d - fundamental discriminant
 def get_CM_vertices(G, d):
     p = G.prime()
 
-    # Create quadratic field with discriminant d
-    K = QuadraticField(d)
-
-    # Create HCP for quadratic field above
-    h = K.hilbert_class_polynomial()
+    # Create HCP for quadratic discriminant above
+    h = hilbert_class_polynomial(d)
 
     #Find roots of HCP in F_p^2
     hmodroots = h.change_ring(GF(p^2)).roots()

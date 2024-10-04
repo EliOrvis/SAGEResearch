@@ -126,27 +126,88 @@ def iterate_edges(G, v):
 
 
 ### Returns the number of (non-backtracking) paths between two vertices of a given length n, counted directly from the graph
-## Inputs: G - an isogeny graph object; start, target - vertices of G; n - path lengths to search for
+## Inputs: G - an isogeny graph object; start, target - vertices of G; n - path lengths to search for, isos - set of isogenies for <G>
+##         indexed_paths - Boolean for whether to return explicit paths as list of indices in <isos> or actual isogenies
 ## Outputs: n - number of paths of specified length
-#  NOTE: This doesn't work correctly right now. In particular, to get the non-backtracking, we first need to understand the action of duals
-#        on the directed graph.
-def n_paths_of_length_n(G, start, target, n, seen = None):
-	if seen is None:
-		seen = {}
+def non_backtracking_paths(G, start, target, n, isos = None, indexed_paths = False):
+  # First, get the isogenies if not already given
+  if isos == None:
+    isos = get_isogenies(G)
 
-	if n == 0:
-		if start == target:
-			return 1
-		else:
-			return 0
-	else:
-		answer = 0
-		for v, i in iterate_edges(G, start):
-			if (v, start, i) not in seen:
-				if (start, v, i) in seen:
-					seen.add((start, v, i))
-					answer += n_paths_of_length_n(G, v, target, n-1, seen)
-					seen.pop((start, v, i))
-				else:
-					answer += n_paths_of_length_n(G, v, target, n-1, seen)
-		return answer
+  # Verify that the number of isogenies equals the number of edges.
+  # This is just a simple check in case someone passes the wrong isogeny set for G
+  assert(len(G.edges()) == len(isos))
+
+  # Find non-backtracking paths of length <n> beginning at <start>
+  nb_paths_of_length_n = []
+
+  # Counter for how many steps we need to take.
+  steps_left = n - 1
+  # List of current paths
+  current_paths = [[iso] for iso in isos if iso.domain().j_invariant() == start] 
+  # Holder for new_paths
+  new_paths = []
+
+  if steps_left == 0:
+    nb_paths_of_length_n = current_paths
+
+  while steps_left > 0:
+    # For each path in current_paths, add on all non-backtracking options
+    for path in current_paths:
+      # Find the last iso in path
+      last_iso = path[-1]
+      # Over all isomorphisms, find the non-backtracking ones
+
+      for iso in isos:
+        # Only look at isos out of the end of previous isogeny
+        if iso.domain() == last_iso.codomain():
+          # Add iso only if it is not backtracking:
+          # This case is when you don't return to the same vertex
+          if iso.codomain() != last_iso.domain():
+            new_paths.append(flatten([path, iso]))
+          # This case is when you return to the same vertex, but you are not backtracking
+          elif all([iso.post_compose(aut) != last_iso.dual() for aut in iso.codomain().automorphisms()]):
+            new_paths.append(flatten([path, iso]))
+
+    # Reset <current_paths>
+    current_paths = new_paths
+    new_paths = []
+
+    # Subtract one from steps_left
+    steps_left = steps_left - 1
+
+    # When while loop is done, add all the paths of given length from v to nb_paths
+    nb_paths_of_length_n = nb_paths_of_length_n + current_paths
+
+  #Find the paths from <start> to <target>
+  paths_temp = [path for path in nb_paths_of_length_n if path[-1].codomain().j_invariant() == target]
+
+  if indexed_paths:
+    #Relabel isogenies in paths with index in isos to be able to compare across paths
+    paths = [[isos.index(iso) for iso in path] for path in paths_temp]
+    return paths
+
+  else:
+    return paths_temp
+
+### Returns a dictionary of the number of paths of a given length between the vertices in two isogeny valleys
+## Inputs: G - an isogeny graph object; d1, d2 - embedded discriminants for <G>; n - path lengths to search for, isos - set of isogenies for <G>
+##         explicit_paths - boolean indicating whether to return the actual paths, or just the count
+## Outputs: out_dict - dictionary of path counts
+def n_paths_between_valleys(G, d1, d2, n, isos = None, explicit_paths = False):
+  # First, get the isogenies if not already given
+  if isos == None:
+    isos = get_isogenies(G)
+
+  # Get relevant vertices
+  vertexset1 = get_CM_vertices(G, d1); vertexset2 = get_CM_vertices(G, d2)
+
+  out_dict = {}
+  for v in vertexset1:
+    for w in vertexset2:
+      if explicit_paths:
+        out_dict[(v,w)] = non_backtracking_paths(G, v, w, n, isos = isos, indexed_paths = True)
+      else:
+        out_dict[(v,w)] = len(non_backtracking_paths(G,v,w,n,isos= isos))
+
+  return out_dict

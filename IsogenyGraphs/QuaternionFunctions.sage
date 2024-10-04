@@ -570,3 +570,15 @@ def get_Eichler_orders_by_level(O, level):
 
   # Return all index <level> suborders that are Eichler
   return [O for O in suborders_by_index(O, level) if is_Eichler(O)]
+
+#### This function returns the number of Eichler suborders of maximal orders with embeddings of d1 that have
+#### an embedding of TO DO FINISH HERE!
+##   Inputs - O, maximal order; level - positive integer coprime to the discriminant of <O>
+##   Outputs - Eichler_orders, list of all Eichler orders of level <level> in <O>
+def get_Eichler_orders_by_level_NOTDONE(O, level):
+  # Validation
+  assert(O.is_maximal())
+  assert(gcd(O.discriminant(), level) == 1)
+
+  # Return all index <level> suborders that are Eichler
+  return [O for O in suborders_by_index(O, level) if is_Eichler(O)]
