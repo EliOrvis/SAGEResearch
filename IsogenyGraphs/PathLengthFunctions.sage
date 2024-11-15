@@ -180,7 +180,11 @@ def non_backtracking_paths(G, start, target, n, isos = None, indexed_paths = Fal
     nb_paths_of_length_n = nb_paths_of_length_n + current_paths
 
   #Find the paths from <start> to <target>
-  paths_temp = [path for path in nb_paths_of_length_n if path[-1].codomain().j_invariant() == target]
+  # If <target> is None, return all non-backtracking paths from <start> of length <n>
+  if target == None:
+    paths_temp = nb_paths_of_length_n
+  else:
+    paths_temp = [path for path in nb_paths_of_length_n if path[-1].codomain().j_invariant() == target]
 
   if indexed_paths:
     #Relabel isogenies in paths with index in isos to be able to compare across paths

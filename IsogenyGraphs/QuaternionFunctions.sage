@@ -142,15 +142,16 @@ def conjugation_subspace(ele1, ele2):
   # Create matrix whose solution space is the coefficients of elements
   # x = a + bi + cj + dij such that x ele1 = ele2 x. This was found by hand,
   # and the calculation is easy, if tedious.
-  row1 = [c0 - d0, c1*s1 - s1*d1, c2*s2 - s2*d2, d3*s1*s2 - c3*s1*s2]
+  row1 = [c0 - d0, c1*s1 - s1*d1, c2*s2 - s2*d2, -c3*s1*s2 + d3*s1*s2]
   row2 = [c1 - d1, c0 - d0, -d3*s2 - c3*s2, c2*s2 + d2*s2]
   row3 = [c2 - d2, c3*s1 + d3*s1, c0 - d0, -c1*s1 - d1*s1]
   row4 = [c3 - d3, c2 + d2, -d1 - c1, c0 - d0]
   # The first entry is the base field. For some reason this doesn't seem easily 
-  # accessible directly from the QA, and we have to take the underlying VS first.
+  # accessible directly from the QA, and we have to take the underlying VS first
   M = matrix(ele1.parent().vector_space().base_field(), [row1, row2, row3, row4])
+  
 
-  return M.kernel()
+  return M.right_kernel()
 
 #### This function returns the norm form of a quaternion algebra
 ##   Inputs - B, a quaternion algebra;
@@ -532,6 +533,59 @@ def suborders_by_index(O, n):
 
   return suborders
 
+#### This function returns all superorders containing a given quaternion order with index n
+##   Inputs - O: quaternion order; n - positive integer
+##   Outputs - superorders: list of superorders containing <O> with index <n>
+#    NOTE: This requires a function from my <arithmetic_functions.sage> file
+def superorders_by_index(O, n):
+  # Get the parent of O, and a basis
+  QA = O.quaternion_algebra()
+  O_basis = O.basis()
+
+  # Every suborder is, in particular, a sublattice. So we find all of those with the right index
+  sublattices = sublattices_by_index(n, len(O_basis))
+
+  # For each sublattice, we check whether the columns give a suborder of <O>. If so, we keep it, otherwise, we move on
+  superorders = []
+  for M in sublattices:
+    try: 
+      quat_eles = [sum([coeff*basis_ele for (coeff, basis_ele) in zip(row, O_basis)]) for row in M.inverse().columns()]
+      superorders.append(QA.quaternion_order(quat_eles))
+    except:
+      continue
+
+  return superorders
+
+#### This function returns all integral left ideals of index n in a given quaternion order
+##   Inputs - O: MAXIMAL quaternion order; n - norm
+##   Outputs - ideals: list of integral ideals of index <n>
+#    NOTE: This requires a function from my <arithmetic_functions.sage> file
+#    NOTE: This is atrociously inefficient. I'm not sure the best way to do this, but it definitely isn't what I've done.
+def integral_left_ideals(O, n):
+  # Get the parent of O, and a basis
+  QA = O.quaternion_algebra()
+  O_basis = O.basis()
+
+  # Validation that the order is maximal
+  assert(O.discriminant() == QA.discriminant())
+
+  # Every integral ideal is, in particular, a sublattice. So we find all of those with the correct index
+  # Use n^2 because the index of an integral ideal of norm n is n^2
+  sublattices = sublattices_by_index(n^2, len(O_basis))
+
+  # For each sublattice, we check whether the columns give a left_ideal of <O>. If so, we keep it, otherwise, we move on
+  ideals = []
+  for M in sublattices:
+    try: 
+      quat_eles = [sum([coeff*basis_ele for (coeff, basis_ele) in zip(row, O_basis)]) for row in M.rows()]
+      ideal = QA.ideal(quat_eles)
+      if ideal.left_order() == O:
+        ideals.append(ideal)
+    except:
+      continue
+
+  return ideals
+
 #### This function checks whether a given order, with level coprime to p in Bpoo is Eichler
 ##   Inputs - O: quaternion order
 ##   Outputs - is_Eichler: boolean
@@ -571,14 +625,53 @@ def get_Eichler_orders_by_level(O, level):
   # Return all index <level> suborders that are Eichler
   return [O for O in suborders_by_index(O, level) if is_Eichler(O)]
 
-#### This function returns the number of Eichler suborders of maximal orders with embeddings of d1 that have
-#### an embedding of TO DO FINISH HERE!
-##   Inputs - O, maximal order; level - positive integer coprime to the discriminant of <O>
-##   Outputs - Eichler_orders, list of all Eichler orders of level <level> in <O>
-def get_Eichler_orders_by_level_NOTDONE(O, level):
-  # Validation
-  assert(O.is_maximal())
-  assert(gcd(O.discriminant(), level) == 1)
 
-  # Return all index <level> suborders that are Eichler
-  return [O for O in suborders_by_index(O, level) if is_Eichler(O)]
+#### This function returns the (unique) two maximal orders whose intersection is a given Eichler order
+##   Inputs - O, an Eichler order;
+##   Outputs - max_pair, a pair of maximal orders in <O.parent()> containing <O>
+def get_maximal_intersection_rep(O):
+  # Some validation
+  assert(is_Eichler(O))
+
+  # Get the level
+  max_disc = O.quaternion_algebra().discriminant()
+  level = ZZ(O.discriminant() / max_disc)
+
+  # Find all superorders of index equal to the level
+  sup_orders = superorders_by_index(O, level)
+
+  # Over all of those, keep only the two whose intersection is O
+  result = []
+  for pair in itertools.combinations(sup_orders, 2):
+    if pair[0].intersection(pair[1]) == O:
+      result.append(pair)
+
+  # More validation
+  assert(len(result) == 1)
+
+  return result[0]
+
+
+#### This function returns the list of discriminants up to a given bound that cover the class set
+#### in the sense that every maximal order of B_poo contains an embedded copy of that discriminant
+##   Inputs - p: a prime; ubound: an upper bound on the discriminants to search for;
+##            lbound (optional): a lower bound for the discriminant search
+##   Outputs - discs: a list of discriminants with absolute value at 
+def Bpoo_covering_discs(p, ubound, lbound = 1):
+  # Some validation
+  assert(p.is_prime())
+
+  # Create maximal orders in Bpoo
+  B = BrandtModule(p)
+  orders = [I.left_order() for I in B.right_ideals()]
+
+  # Create holder for the lists of discriminants for each maximal order
+  discs_by_order = []
+
+  for O in orders:
+    discs_by_order.append(set(quaternion_order_embedded_discs(O, ubound, lbound)))
+
+  # Get the set of discriminants that embed in every order
+  discs = set.intersection(*discs_by_order)
+
+  return discs
