@@ -79,8 +79,8 @@ class IsogenyGraph():
 
 def build_isogeny_graph_over_Fpbar(p, l, undirected, steps=oo):
     # First, create the graph with James' code if possible, otherwise, we use the slower SAGE implementation
-    if load_success == True and undirected == False:
-        return ssl_graph(p, l)
+    #if load_success == True and undirected == False:
+    #    return ssl_graph(p, l)
     """
     Given a prime p, this function returns
     the l-isogeny graph of supersingular elliptic

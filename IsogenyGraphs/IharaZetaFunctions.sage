@@ -3,9 +3,9 @@
 
 ### Function to compute the Ihara zeta function of a supersingular isogeny graph
 ### For explanations of why the formula implemented below works, see the upcoming paper by myself, TM, GS, JBL, and LZ
-##  Inputs: G - supersingular isogeny graph object
+##  Inputs: G - supersingular isogeny graph object; use_undirected_formula - flag for whether to use Travis's formula for the # of undirected edges
 ##  Outputs: zeta - rational polynomial in one variable that is the Ihara zeta function
-def ihara_zeta(G):
+def ihara_zeta(G, use_undirected_formula = True):
   # Construct rational function space
   R.<u> = ZZ[]
   S = R.fraction_field()
@@ -14,6 +14,47 @@ def ihara_zeta(G):
   A = G.adjacency_matrix()
   ell = G.isogeny_degree()
   p = G.prime()
+
+  n_sd = n_self_dual_loops(G)
+
+  # If the user wants to use the fast way, we simply implement that
+  if use_undirected_formula:
+    assert(p > 3)
+
+    n_double_cosets = double_coset_count(G)
+
+    # Number of edges in the undirected graph is the number of double cosets, minus the number of self-dual edges, divided by 2 + the number of sd edges
+    u_edges = (n_double_cosets - n_sd)/2 + n_sd
+
+    num_exp = u_edges - len(G.vertices()) - n_sd
+
+    return (1 - u^2)^(-num_exp)*(1 + u)^(-n_sd)*((1 - A*u + ell*u^2).determinant())^(-1)
+
+
+  else:
+    # Implement formula 
+    if p % 12 == 1:
+      eps = 0
+    elif p % 12 == 5:
+      eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3
+    elif p % 12 == 7:
+      eps = (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2
+    elif p % 12 == 11:
+      if 0 in G.neighbors(1728 % p):
+        eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3 + (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2 
+      else:
+        eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3 + (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2
+
+    num_exp = ((2 - ell - 1)*len(G.vertices()) + n_sd + eps)/2
+
+    return (1 - u^2)^num_exp / (((1 - A*u + ell*u^2).determinant())*(1 + u)^n_sd)
+
+### Function to get the number of self-dual loops in G
+##  Inputs: G - isogeny graph object
+##  Outputs: n_sd - number of self-dual loops
+def n_self_dual_loops(G):
+  p = G.prime()
+  ell = G.isogeny_degree()
 
   # Get the number of self-dual loops of G (this is done using the formula, not my code for finding all self-dual loops)
   if ell % 4 == 3:
@@ -26,22 +67,7 @@ def ihara_zeta(G):
   else:
     n_sd = n_embeddings 
 
-  # Implement formula 
-  if p % 12 == 1:
-    eps = 0
-  elif p % 12 == 5:
-    eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3
-  elif p % 12 == 7:
-    eps = (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2
-  elif p % 12 == 11:
-    if 0 in G.neighbors(1728 % p):
-      eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3 + (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2 
-    else:
-      eps = 2*(ell + 1 - len([loop for loop in G.loops() if loop[0] == 0]))/3 + (ell + 1 - len([loop for loop in G.loops() if loop[0] == 1728]))/2
-
-  num_exp = ((2 - ell - 1)*len(G.vertices()) + n_sd + eps)/2
-
-  return (1 - u^2)^num_exp / (((1 - A*u + ell*u^2).determinant())*(1 + u)^n_sd)
+  return n_sd
 
 ### Function to directly find the non-backtracking cycles of a given length in the SSI graph
 ##  Inputs:  G - SSI graph object; n - length of cycles to count; isos (Optional) - list of isogenies in G
@@ -180,5 +206,31 @@ def count_cycles_by_orientations_formula(G, r):
   # Note that this uses code from my <Distribution_of_cycles.sage> file
   class_ns = [tup[1] for tup in get_discriminants_by_ell_order_fast(ell, r, p = p)]
 
+  print(class_ns)
+
   # Implement formula
   return (2/r)*sum(class_ns)
+
+### Function to compute the number of double cosets in Aut(E_i)\L_{ij}/Aut(E_j), throughout the isogeny graph, using Travis's formula
+##  Inputs: G - Isogeny graph
+##  Outputs: n - number of edges in the undirected graph associated to G
+def double_coset_count(G):
+
+  p = G.prime()
+  ell = G.isogeny_degree()
+
+  # Compute <eps_0> (1 if 0 is SS and 0 otherwise) and <eps_1728> (similar)
+  eps_0 = 1 if p % 12 in [5, 11] else 0
+  eps_1728 = 1 if p % 12 in [7, 11] else 0
+
+  # Case one - <ell> is odd
+  if ell % 2 == 1:
+    eps_0_term = eps_0*(((ell + 1 - (1 + legendre_symbol(-3,ell)))/3) + (1 + legendre_symbol(-3, ell)))
+    eps_1728_term = eps_1728*(((ell + 1 - (1 + legendre_symbol(-1, ell)))/2) + (1 + legendre_symbol(-1, ell)))
+
+    n = ((ell + 1)*floor((p-1)/12) + eps_0_term + eps_1728_term)
+
+  else:
+    n = (3*floor((p-1)/12) + eps_0 + 2*eps_1728)
+
+  return n

@@ -257,13 +257,15 @@ def count_edges_within_valley(d, p, l):
 ##   Inputs - B, a quaternion algebra; fraca, a fractional ideal of the maximal order of K = Q(i),
 ##                                      where i is the first generator of <B>; 
 ##            lamb, an element of <K> satisfying the conditions of section 6.2 of LV;
-##                  target (optional), an element of <B> that can be the image of sqrt(d) in K. 
-##                  If not given, then <i> is used as the target
+##            embedding (optional), an element of <B> that can be the image of sqrt(d) in K. 
+##                  If not given, then <i> is used as the target;
+##            fracq (optional), fractional ideal of norm q containing <lamb>, 
+##                  If not given, the program finds one (this could take a long time)
 ##   Outputs - O, a maximal order in <B>
 ##   NOTES: This is currently only implemented for the maximal order of <K>, and for the case where
 ##          the prime p (discriminant of <B>) is inert in <K>.
 ##          This also uses a function from my <QuaternionFunctions.sage> file
-def Lauter_Viray_maximal_order(G, fraca, lamb, embedding = None):
+def Lauter_Viray_maximal_order(B, fraca, lamb, embedding = None, fracq = None):
   ### First, validation
 
   # <B> must have prime discriminant
@@ -275,6 +277,7 @@ def Lauter_Viray_maximal_order(G, fraca, lamb, embedding = None):
   tau = K.gens()[0]
   i,j,k = B.gens()
   d = K.discriminant()
+  diff = K.different()
   assert(tau^2 == d)
   assert(i^2 == d)
   q = ZZ(-j^2/p)
@@ -284,11 +287,25 @@ def Lauter_Viray_maximal_order(G, fraca, lamb, embedding = None):
   fracabar = K.ideal([gen.conjugate() for gen in fraca.gens()])
   fracainv = fraca.inverse()
   abarainv = fracabar*fracainv
-  qs = K.ideals_of_bdd_norm(q)[q]
-  for qi in qs:
-    if lamb in qi*(abarainv.inverse()):
-      fracq = qi
-      break
+
+  if fracq == None:
+
+    # NOTE: right now, this is the expensive step. This can be made much faster by
+    #       fiding the factorization of q, then finding the prime ideals of the right norms
+    #       then trying the different combinations of them until we find the correct fracq
+    qs = K.ideals_of_bdd_norm(q)[q]
+    for qi in qs:
+      if lamb in qi*(abarainv.inverse()):
+        fracq = qi
+        break
+
+  else:
+
+    # Validate that <fracq> and <fraca> are from the same field
+    assert(fracq.number_field() == K)
+
+    # Validate that <lamb> is in the right ideal
+    assert(lamb in fracq*(abarainv.inverse()))
 
   # Validate that <lamb> is in q^{-1}(abar^{-1} a) for some q:
   assert(fracq)
@@ -302,91 +319,98 @@ def Lauter_Viray_maximal_order(G, fraca, lamb, embedding = None):
     phi = K.hom([i])
   else:
     assert(embedding^2 == d)
-    phi = K.hom([target])
+    phi = K.hom([embedding])
 
   # Create basis obtained as in my research journal entry on 12/4/2024
   beta1, beta2 = [phi(base_ele) for base_ele in (fracq.inverse()*diff.inverse()*abarainv).basis()] 
   basis = [1, (d + phi(tau))/2, phi(lamb)*beta1 + beta1*j, phi(lamb)*beta2 + beta2*j]
+ 
   O = B.quaternion_order(basis)
 
   return O
 
-#### Below is an old version of the code to construct Lauter-Viray maximal orders based
-#### directly on the short exact sequence given by Lauter and Viary. The new method above is 
-#### much faster, and based on a more useful exact sequence that can be found in my research journal
-#### on 12/4/2024.
-# def Lauter_Viray_maximal_order(B, fraca, lamb, target = None):
-#   ### First, validation
+#### This function the creates the hom set Hom(E,E') given in Corollary 4.2.3 of Scullard's thesis
+##   Inputs - B, a quaternion algebra; fracb, a fractional ideal of the maximal order of K = Q(i),
+##                                      where i is the first generator of <B>; 
+##            lamb (optional), an element of <K> satisfying the conditions of section 4.2.2 of Scullard's thesis;
+##            embedding (optional), an element of <B> that can be the image of sqrt(d) in K. 
+##                  If not given, then <i> is used as the target;
+##            fracq (optional), fractional ideal of norm q containing <lamb>, 
+##                  If not given, the program finds one (this could take a long time)
+##   Outputs - an ideal in <B> representing the End(E)-module Hom(E, E')
+##   NOTES: This is currently only implemented for the maximal order of <K>, and for the case where
+##          the prime p (discriminant of <B>) is inert in <K>.
+##          This also uses a function from my <QuaternionFunctions.sage> file
+##          We also assume that the choice of fraca is (1), since this covers all cases anyway
+def Scullard_Homset(B, fracb, lamb, fraca = None, embedding = None, fracq = None):
+  ### First, validation
 
-#   # <B> must have prime discriminant
-#   p = B.discriminant()
-#   assert(p.is_prime())
+  # <B> must have prime discriminant
+  p = B.discriminant()
+  assert(p.is_prime())
 
-#   # Discriminant of <K> must be the same as the field containing <fraca>
-#   K = fraca.number_field()
-#   tau = K.gens()[0]
-#   i,j,k = B.gens()
-#   d = K.discriminant()
-#   assert(tau^2 == d)
-#   assert(i^2 == d)
+  # Discriminant of <K> must be the same as the field containing <fraca>
+  K = fracb.number_field()
+  tau = K.gens()[0]
+  i,j,k = B.gens()
+  d = K.discriminant()
+  diff = K.different()
+  assert(tau^2 == d)
+  assert(i^2 == d)
+  q = ZZ(-j^2/p)
 
-#   # j must square to a prime times p
-#   q = ZZ(-j^2/p)
-  
 
-#   # Create <fracabar> and <fracainv> to validate conditions on <lamb>
-#   fracabar = K.ideal([gen.conjugate() for gen in fraca.gens()])
-#   fracainv = fraca.inverse()
-#   abarainv = fracabar*fracainv
-#   qs = K.ideals_of_bdd_norm(q)[q]
-#   for qi in qs:
-#     if lamb in qi*(abarainv.inverse()):
-#       fracq = qi
-#       break
+  # Create <fracabar> and <fracainv> to validate conditions on <lamb>
+  fracbbar = K.ideal([gen.conjugate() for gen in fracb.gens()])
+  fracbinv = fracb.inverse()
+  bbarbinv = fracbbar*fracbinv
 
-#   # Validate that <lamb> is in q^{-1}(abar^{-1} a):
-#   assert(fracq)
+  # If the user does not supply fraca, make it trivial
+  if fraca == None:
+    fraca = K.maximal_order().fractional_ideal(1)
 
-#   # Validate the condition on the norm of <lamb>:
-#   assert(lamb.norm() % d == -p*q % d)
-#   assert(lamb.is_integral())
+  fracabar = K.ideal([gen.conjugate() for gen in fraca.gens()])
+  fracainv = fraca.inverse()
+  abarainv = fracabar*fracainv
 
-#   # Create homomorphism from <K> to <B> to transfer structure
-#   if target == None:
-#     phi = K.hom([i])
-#   else:
-#     assert(target^2 == d)
-#     phi = K.hom([target])
+  if fracq == None:
 
-#   # Create the list of generators for R(a, lambda) using the exact sequence of Lemma 6.4
-#   omega1, omega2 = abarainv.basis()
-#   ker_basis = [B(1), (d + phi(tau))/2, phi(omega1)*j, phi(omega2)*j]
+    # NOTE: right now, this is the expensive step. This can be made much faster by
+    #       fiding the factorization of q, then finding the prime ideals of the right norms
+    #       then trying the different combinations of them until we find the correct fracq
+    qs = K.ideals_of_bdd_norm(q)[q]
+    for qi in qs:
+      if lamb in qi*(bbarbinv.inverse())*(abarainv.inverse()):
+        fracq = qi
+        break
 
-#   diff = K.different()
-#   qdabarainv = (fracq.inverse())*(diff.inverse())*abarainv
+  else:
 
-#   # Get elements of the quotient
-#   quo_eles = [ele for ele in qdabarainv.free_module().quotient(abarainv.free_module())]
+    # Validate that <fracq> and <fraca> are from the same field
+    assert(fracq.number_field() == K)
 
-#   # To save time, we try elements 10 at a time until we have enough to generate the maximal order
-#   lifts = []
-#   k_lifts = []
-#   # WARNING: This assumes everything is implemented correctly, so *eventually* we
-#   #           will have enough generators to get the entire maximal order. Tread carefully. 
-#   while True:
-#     # Get ten new lifts
-#     # Lift 10 random elements from the quotient and add these to <lifts>
-#     lifts = lifts + [ele.lift() for ele in sample(quo_eles, 10)]
-#     # Lift elements from free module to K
-#     k_lifts = k_lifts + [lift[0] + lift[1]*tau for lift in lifts]
+    # Validate that <lamb> is in the right ideal
+    assert(lamb in fracq*(bbarbinv.inverse())*(abarainv.inverse()))
 
-#     # Make list of all generators for order in B
-#     # Note that this relies on the proof of surjectivity in Lemma 6.4 of LV
-#     generator_list = ker_basis + [phi(lamb)*phi(lift) + phi(lift)*j for lift in k_lifts]
+  # Validate that <lamb> is in q^{-1}(abar^{-1} a) for some q:
+  assert(fracq)
 
-#     # Break if the order we create is already maximal
-#     O = B.quaternion_order(quaternion_order_basis_from_spanning_set(B,generator_list))
-#     if O.discriminant() == p:
-#       break
+  # Validate the condition on the norm of <lamb>:
+  assert(lamb.norm() % d == -p*q % d)
+  assert(lamb.is_integral())
 
-#   return O
+  # Create homomorphism from <K> to <B> to transfer structure
+  if embedding == None:
+    phi = K.hom([i])
+  else:
+    assert(embedding^2 == d)
+    phi = K.hom([embedding])
+
+  # Create basis obtained as in the case of maximal orders
+  alpha1, alpha2 = [phi(base_ele) for base_ele in (diff.inverse()*fracb).basis()]
+  beta1, beta2 = [phi(base_ele) for base_ele in (fracq.inverse()*diff.inverse()*abarainv*fracbbar).basis()] 
+  basis = [alpha1, alpha2, phi(lamb)*beta1 + beta1*j, phi(lamb)*beta2 + beta2*j]
+ 
+  I = B.ideal(basis)
+
+  return I

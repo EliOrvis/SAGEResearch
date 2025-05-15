@@ -20,4 +20,4 @@ data_path = "/mnt/c/Users/welio/Documents/Boulder/Research/SAGE/Data"
 TO SAVE FIGURES MADE FROM PANDAS DATA:
 
 plt = df.plot([options])
-plt.get_figure.savefig(data_path + [path_to_final_location])
+plt.get_figure().savefig(data_path + [path_to_final_location])

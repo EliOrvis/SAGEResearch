@@ -46,7 +46,7 @@ def expanded_type_number(B):
 
   # Use standard formulas to determine the type number of B
   base = floor(p/12)
-  if p % 12 == 0:
+  if p % 12 == 1:
     return base
   elif p % 12 in [5, 7]:
     return base + 1
@@ -468,7 +468,7 @@ def intersection_number_embeddings(O, opt1, opt2):
 #### This function checks whether two pairs of quaternion elements are "simultaneously conjugate"
 ##   Inputs - O: quaternion order; pair1, pair2 - pairs of elements in O with the same min polys
 ##   Outputs - result: Boolean
-def simul_conj(pair1, pair2):
+def simul_conj(O, pair1, pair2):
   # Some validation
   assert(pair1[0].reduced_norm() == pair2[0].reduced_norm() and pair1[0].reduced_trace() == pair2[0].reduced_trace())
   assert(pair1[1].reduced_norm() == pair2[1].reduced_norm() and pair1[1].reduced_trace() == pair2[1].reduced_trace())
@@ -675,3 +675,16 @@ def Bpoo_covering_discs(p, ubound, lbound = 1):
   discs = set.intersection(*discs_by_order)
 
   return discs
+
+
+#### This function conjugtes a quaternion order by a given element
+##   Inputs - O: a quaternion order; ele - an element of the ambient quaternion algebra
+##   Outputs - O_conj: the quaternion order obtained by conjugating <O> by <ele>
+def conjugate_quaternion_order(O, ele):
+  # Some validation:
+  B = O.quaternion_algebra()
+  assert(ele.parent() == B)
+
+  O_conj = B.quaternion_order([ele*base_ele*(ele.inverse()) for base_ele in O.basis()])
+
+  return O_conj

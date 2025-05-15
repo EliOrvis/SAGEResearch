@@ -85,8 +85,9 @@ def genus_number_of_d(d):
 
 def imaginary_quadratic_order_class_number(d):
   # Create the order of discriminant d
+  R.<tempvar> = ZZ[]
   pd = ZZ(d % 2)
-  O.<z> = EquationOrder(x^2 + pd*x + (pd - d)/4)
+  O.<z> = EquationOrder(tempvar^2 + pd*tempvar + (pd - d)/4)
 
   return O.class_number()
 
